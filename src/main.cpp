@@ -39,6 +39,9 @@ void loop() {
   // Handle LVGL tasks
   handleLVGLTasks();
   
+  // Process queued keyboard events (safe for LVGL operations)
+  processQueuedKeys();
+  
   static unsigned long lastMemoryPrint = 0;
   unsigned long currentTime = millis();
   

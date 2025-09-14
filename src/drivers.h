@@ -67,5 +67,6 @@ void onConnectButtonClick(lv_event_t * e);
 void onScanButtonClick(lv_event_t * e);
 char hidKeyToChar(uint8_t key, uint8_t modifier);
 void sendKeyToLVGL(char key);
+void processQueuedKeys();
 
 #endif // DRIVERS_H

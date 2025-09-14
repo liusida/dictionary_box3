@@ -22,6 +22,7 @@ extern lv_obj_t * ui_BtnConnectBLE;
 extern lv_obj_t * ui_TxtConnectBLE;
 extern lv_obj_t * ui_BtnScan;
 extern lv_obj_t * ui_TxtScanBLE;
+extern lv_obj_t * ui_InputTest;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

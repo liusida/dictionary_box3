@@ -10,6 +10,14 @@ static NimBLEClient* pClient = nullptr;
 static NimBLERemoteService* pKeyboardService = nullptr;
 static NimBLERemoteCharacteristic* pKeyboardChar = nullptr;
 
+// Key event queue for safe LVGL operations
+struct KeyEvent {
+    char key;
+    bool valid;
+};
+
+KeyEvent pendingKeyEvent = {0, false};
+
 // LVGL callback functions for LVGL 9.x
 void my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
   TFT_eSPI* tft = (TFT_eSPI*)lv_display_get_user_data(disp);
@@ -243,15 +251,35 @@ void updateConnectButton(const char* text) {
     }
 }
 
-// Function to send keyboard input to LVGL
+// Function to queue keyboard input for safe processing in main loop
 void sendKeyToLVGL(char key) {
     if (key == 0) return; // Ignore null characters
     
-    // Send to currently focused object
-    lv_obj_t* focused = lv_group_get_focused(lv_group_get_default());
+    // Store the key for processing in main loop (safe for BLE callback)
+    pendingKeyEvent.key = key;
+    pendingKeyEvent.valid = true;
+    
+    Serial.printf("Queued key: '%c' (0x%02X)\n", key, (unsigned char)key);
+}
+
+// Function to process queued keys (call this from main loop)
+void processQueuedKeys() {
+    if (!pendingKeyEvent.valid) return;
+    
+    char key = pendingKeyEvent.key;
+    pendingKeyEvent.valid = false; // Clear the event
+    
+    // Now do the LVGL operations safely in main loop context
+    lv_group_t* group = lv_group_get_default();
+    lv_obj_t* focused = lv_group_get_focused(group);
+    
+    Serial.printf("Processing key: '%c' (0x%02X), Group=%p, Focused=%p\n", 
+                  key, (unsigned char)key, (void*)group, (void*)focused);
+    
     if (focused) {
         // Check if it's a text area
         if (lv_obj_has_class(focused, &lv_textarea_class)) {
+            Serial.println("Processing text area input");
             // Handle text area
             if (key == 0x08) { // Backspace
                 lv_textarea_delete_char(focused);
@@ -260,8 +288,11 @@ void sendKeyToLVGL(char key) {
             } else if (key >= 32 && key <= 126) { // Printable characters
                 lv_textarea_add_char(focused, key);
             }
+        } else {
+            Serial.println("Focused object is not a text area");
         }
-        // Add support for other widget types as needed
+    } else {
+        Serial.println("No focused object");
     }
 }
 
@@ -355,11 +386,40 @@ void onScanButtonClick(lv_event_t * e) {
     startBLEScan();
 }
 
+// Function to set up focus group for keyboard input
+void setupKeyboardFocus() {
+    // Create the default group if it doesn't exist
+    lv_group_t* group = lv_group_get_default();
+    if (group == NULL) {
+        // Create the group if it doesn't exist
+        group = lv_group_create();
+        lv_group_set_default(group);
+        Serial.println("Created new default group");
+    } else {
+        Serial.println("Using existing default group");
+    }
+
+    // Add ui_InputTest to the focus group
+    if (ui_InputTest) {
+        lv_group_add_obj(group, ui_InputTest);
+        Serial.println("Added ui_InputTest to focus group");
+    }
+    
+    // Add ui_InputBLEs to the focus group
+    if (ui_InputBLEs) {
+        lv_group_add_obj(group, ui_InputBLEs);
+        Serial.println("Added ui_InputBLEs to focus group");
+    }
+}
+
 void initBLEKeyboard() {
     Serial.println("Initializing BLE Keyboard...");
 
     // Load keyboard settings screen
     lv_screen_load(ui_Keyboard_Settings);
+    
+    // Set up focus group for keyboard input
+    setupKeyboardFocus();
     
     // Clear dropdown initially
     lv_dropdown_set_options(ui_InputBLEs, "Scanning for keyboards...");

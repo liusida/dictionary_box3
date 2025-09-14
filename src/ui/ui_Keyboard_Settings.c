@@ -14,6 +14,7 @@ lv_obj_t * ui_BtnConnectBLE = NULL;
 lv_obj_t * ui_TxtConnectBLE = NULL;
 lv_obj_t * ui_BtnScan = NULL;
 lv_obj_t * ui_TxtScanBLE = NULL;
+lv_obj_t * ui_InputTest = NULL;
 // event funtions
 
 // build funtions
@@ -42,14 +43,14 @@ void ui_Keyboard_Settings_screen_init(void)
     ui_TxtKeyboard = lv_label_create(ui_Container3);
     lv_obj_set_width(ui_TxtKeyboard, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_TxtKeyboard, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_TxtKeyboard, 15);
+    lv_obj_set_x(ui_TxtKeyboard, 0);
     lv_obj_set_y(ui_TxtKeyboard, 26);
     lv_label_set_text(ui_TxtKeyboard, "Keyboard:");
     lv_obj_set_style_text_font(ui_TxtKeyboard, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_InputBLEs = lv_dropdown_create(ui_Container3);
     lv_dropdown_set_options(ui_InputBLEs, "Option 1\nOption 2\nOption 3");
-    lv_obj_set_width(ui_InputBLEs, 204);
+    lv_obj_set_width(ui_InputBLEs, 182);
     lv_obj_set_height(ui_InputBLEs, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_InputBLEs, 97);
     lv_obj_set_y(ui_InputBLEs, 15);
@@ -98,6 +99,15 @@ void ui_Keyboard_Settings_screen_init(void)
     lv_label_set_text(ui_TxtScanBLE, "Scan");
     lv_obj_set_style_text_font(ui_TxtScanBLE, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_InputTest = lv_textarea_create(ui_Keyboard_Settings);
+    lv_obj_set_width(ui_InputTest, 280);
+    lv_obj_set_height(ui_InputTest, LV_SIZE_CONTENT);    /// 70
+    lv_obj_set_x(ui_InputTest, 0);
+    lv_obj_set_y(ui_InputTest, 10);
+    lv_obj_set_align(ui_InputTest, LV_ALIGN_CENTER);
+    lv_textarea_set_placeholder_text(ui_InputTest, "For Testing...");
+    lv_textarea_set_one_line(ui_InputTest, true);
+
 }
 
 void ui_Keyboard_Settings_screen_destroy(void)
@@ -114,5 +124,6 @@ void ui_Keyboard_Settings_screen_destroy(void)
     ui_TxtConnectBLE = NULL;
     ui_BtnScan = NULL;
     ui_TxtScanBLE = NULL;
+    ui_InputTest = NULL;
 
 }
