@@ -1,12 +1,10 @@
-#ifndef DRIVERS_H
-#define DRIVERS_H
+#pragma once
 
 #include <Arduino.h>
 #include "lvgl.h"
 #include "TFT_eSPI.h"
 #include "GT911.h"
 #include "Wire.h"
-#include "NimBLEDevice.h"
 
 /**
  * @brief Initialize the GT911 touch controller
@@ -39,34 +37,3 @@ void initLVGLDisplay(TFT_eSPI& tft, GT911& touch);
  */
 void handleLVGLTasks();
 
-/**
- * @brief Initialize BLE keyboard functionality
- * 
- * This function sets up:
- * - BLE device scanning for keyboards
- * - Secure bonding and connection
- * - UI integration for device selection
- */
-void initBLEKeyboard();
-
-/**
- * @brief Start BLE device scanning
- */
-void startBLEScan();
-
-/**
- * @brief Connect to selected BLE keyboard device
- * @param deviceIndex Index of selected device from dropdown
- */
-void connectBLEKeyboard(uint8_t deviceIndex);
-
-// Internal helper functions
-void updateKeyboardDropdown();
-void updateConnectButton(const char* text);
-void onConnectButtonClick(lv_event_t * e);
-void onScanButtonClick(lv_event_t * e);
-char hidKeyToChar(uint8_t key, uint8_t modifier);
-void sendKeyToLVGL(char key);
-void processQueuedKeys();
-
-#endif // DRIVERS_H

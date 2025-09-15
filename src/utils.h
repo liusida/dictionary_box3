@@ -1,5 +1,4 @@
-#ifndef UTILS_H
-#define UTILS_H
+#pragma once
 
 #include <Arduino.h>
 
@@ -22,4 +21,3 @@ void printMemoryStatus();
  */
 void manualResetDisplay();
 
-#endif // UTILS_H

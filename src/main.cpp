@@ -5,11 +5,12 @@
 
 #include "ui/ui.h"
 #include "utils.h"
-#include "drivers.h"
+#include "drivers/drivers.h"
 
 // Global objects
 TFT_eSPI tft = TFT_eSPI();
 GT911 touch = GT911();
+BLEKeyboard bleKeyboard;
 
 void setup() {
   Serial.begin(115200);
@@ -30,26 +31,26 @@ void setup() {
   
   // Initialize UI and load splash screen
   ui_init();
+  lv_disp_load_scr(ui_WIFI_Settings);
+  addObjectToDefaultGroup(ui_InputSSIDs);
+  addObjectToDefaultGroup(ui_InputPassword);
   
   // Initialize BLE keyboard functionality
-  initBLEKeyboard();
+  bleKeyboard.setPowerLevel(-20);
+  bleKeyboard.begin();
+  
+  // Set callback to connect BLE keyboard to LVGL key processing
+  bleKeyboard.setKeyCallback(sendKeyToLVGL);
 }
 
 void loop() {
   // Handle LVGL tasks
   handleLVGLTasks();
+
+  bleKeyboard.tick();
   
   // Process queued keyboard events (safe for LVGL operations)
   processQueuedKeys();
-  
-  static unsigned long lastMemoryPrint = 0;
-  unsigned long currentTime = millis();
-  
-  // Print memory status every 10 seconds
-  // if (currentTime - lastMemoryPrint >= 10000) {
-  //   printMemoryStatus();
-  //   lastMemoryPrint = currentTime;
-  // }
   
   delay(5); // Small delay for LVGL
 }

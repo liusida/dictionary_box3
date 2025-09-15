@@ -1,3 +1,5 @@
+#pragma once
+
 // Touch pin definitions for ESP32-S3-Box-3
 #define TOUCH_INT_PIN 3 // BSP_LCD_TOUCH_INT
 #define TOUCH_RESET_PIN 48

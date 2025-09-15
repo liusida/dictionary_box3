@@ -1,3 +1,5 @@
+#pragma once
+
 // Display configuration for ILI9342-based ESP32-S3-Box
 
 #define USER_SETUP_ID 252

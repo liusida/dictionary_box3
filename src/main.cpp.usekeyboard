@@ -1,0 +1,17 @@
+#include <Arduino.h>
+#include "drivers/ble_keyboard.h"
+
+// Global BLEKeyboard instance
+BLEKeyboard bleKeyboard;
+
+void setup() {
+    Serial.begin(115200);
+    delay(500);
+
+    bleKeyboard.begin(1000);
+}
+
+void loop() {
+    delay(10);
+    bleKeyboard.tick();
+}
