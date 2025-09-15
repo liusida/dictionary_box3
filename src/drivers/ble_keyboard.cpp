@@ -322,3 +322,15 @@ char BLEKeyboard::convertKeyCodeToChar(uint8_t keyCode, uint8_t modifiers) {
         default: return 0; // Unknown key
     }
 }
+
+bool BLEKeyboard::isConnected() const {
+    // Check if we have a connected client for our advertised device
+    if (advDevice) {
+        NimBLEClient* pClient = NimBLEDevice::getClientByPeerAddress(advDevice->getAddress());
+        if (pClient && pClient->isConnected()) {
+            return true;
+        }
+    }
+    
+    return false;
+}

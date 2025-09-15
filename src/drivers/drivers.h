@@ -12,6 +12,7 @@
 #include "ble_keyboard.h"
 #include "key_processing.h"
 #include "lvgl_drive.h"
+#include "wifi_control.h"
 
 
 

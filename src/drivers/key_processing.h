@@ -22,3 +22,5 @@ void sendKeyToLVGL(char key);
  */
 void processQueuedKeys();
 
+void setSubmitCallback(void (*callback)());
+void setKeyInCallback(void (*callback)(char key));

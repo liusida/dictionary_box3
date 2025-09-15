@@ -109,4 +109,10 @@ class BLEKeyboard {
      * @param callback Function to call when a key is received
      */
     void setKeyCallback(KeyCallback callback) { keyCallback = callback; }
+    
+    /**
+     * Check if BLE keyboard is connected
+     * @return true if connected, false otherwise
+     */
+    bool isConnected() const;
 };
