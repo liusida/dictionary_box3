@@ -6,8 +6,8 @@
 #include "AudioTools/CoreAudio/AudioHttp/URLStream.h"
 #include "AudioTools/AudioCodecs/CodecMP3Helix.h"
 
-static const char* SSID     = "StarLab_2.4G";
-static const char* PASSWORD = "1234567891";
+static const char* SSID     = "";
+static const char* PASSWORD = "";
 static const char* MP3_URL  = "http://192.168.1.164:1234/output.mp3";
 
 // Audio board and output (ES8311)
@@ -21,8 +21,8 @@ MP3DecoderHelix mp3;              // MP3 decoder
 EncodedAudioStream decoded(&out, &mp3); // writes decoded PCM to I2S output
 StreamCopy copier(decoded, url, 4096);
 
-// Fix for removing ID3v2 header, some mp3 files would cause crash.
-void fixRemoveID3Info(Stream& s){
+// Fix for removing ID3v2 header
+auto skipID3v2 = [&](Stream& s){
   uint8_t hdr[10];
   if (s.readBytes(hdr, 10) != 10) return;                 // not enough -> ignore
   if (hdr[0]=='I' && hdr[1]=='D' && hdr[2]=='3') {
@@ -40,7 +40,7 @@ void fixRemoveID3Info(Stream& s){
     url.end();
     url.begin(MP3_URL, "audio/mpeg");
   }
-}
+};
 
 void audioTask(void*){
   for(;;){
@@ -97,7 +97,7 @@ void setup() {
     Serial.println("URL open failed");
     return;
   }
-  fixRemoveID3Info(url);
+  skipID3v2(url);
 
   // Initialize encoded stream so decoder can push PCM to output
   decoded.begin();
