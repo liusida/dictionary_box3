@@ -1,7 +1,17 @@
 #include "wifi_control.h"
 #include "ui/ui.h"
 #include "drivers/lvgl_drive.h"
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 #include <vector>
+#include <time.h>
+#include "esp_log.h"
+static const char *TAG = "WiFi";
+
+// point to the file specified in platformio.ini
+// certs/x509_crt_bundle
+extern const uint8_t certs_x509_crt_bundle_start[] asm("_binary_certs_x509_crt_bundle_start");
+extern const uint8_t certs_x509_crt_bundle_end[]   asm("_binary_certs_x509_crt_bundle_end");
 
 // Static instance pointer for callbacks
 WiFiControl* WiFiControl::instance = nullptr;
@@ -18,32 +28,33 @@ WiFiControl::~WiFiControl() {
 }
 
 bool WiFiControl::begin() {
-    Serial.println("[WiFi] Starting WiFi initialization...");
-    
+    ESP_LOGI(TAG, "Starting WiFi initialization...");
+    client.setCACertBundle(certs_x509_crt_bundle_start, certs_x509_crt_bundle_end - certs_x509_crt_bundle_start);
+        
     // Initialize preferences for NVS storage
     if (!preferences.begin("wifi_config", false)) {
-        Serial.println("[WiFi] Failed to open preferences");
+        ESP_LOGE(TAG, "Failed to open preferences");
         return false;
     }
     
     // First, try to connect with saved credentials
     if (connectWithSavedCredentials()) {
-        Serial.println("[WiFi] Connected using saved credentials");
+        ESP_LOGI(TAG, "Connected using saved credentials");
         wifiConnected = true;
         wasConnected = true;
         return true;
     }
     
-    Serial.println("[WiFi] Failed to connect with saved credentials, showing UI...");
+    ESP_LOGW(TAG, "Failed to connect with saved credentials, showing UI...");
     
     // If that fails, show the WiFi settings UI
     if (showWiFiSettingsUI()) {
-        Serial.println("[WiFi] Connected via UI configuration");
+        ESP_LOGI(TAG, "Connected via UI configuration");
         wifiConnected = true;
         return true;
     }
     
-    Serial.println("[WiFi] Failed to connect via UI");
+    ESP_LOGE(TAG, "Failed to connect via UI");
     return false;
 }
 
@@ -51,16 +62,16 @@ bool WiFiControl::connectWithSavedCredentials() {
     String ssid, password;
     
     if (!loadCredentials(ssid, password)) {
-        Serial.println("[WiFi] No saved credentials found");
+        ESP_LOGW(TAG, "No saved credentials found");
         return false;
     }
     
     if (ssid.length() == 0) {
-        Serial.println("[WiFi] Empty SSID in saved credentials");
+        ESP_LOGW(TAG, "Empty SSID in saved credentials");
         return false;
     }
     
-    Serial.printf("[WiFi] Attempting to connect to saved network: %s\n", ssid.c_str());
+    ESP_LOGI(TAG, "Attempting to connect to saved network: %s", ssid.c_str());
     
     WiFi.begin(ssid.c_str(), password.c_str());
     
@@ -69,21 +80,33 @@ bool WiFiControl::connectWithSavedCredentials() {
     while (WiFi.status() != WL_CONNECTED && attempts < 20) {
         delay(500);
         attempts++;
-        Serial.print(".");
+        // keep silent during retry to avoid spam
     }
     
     if (WiFi.status() == WL_CONNECTED) {
-        Serial.printf("\n[WiFi] Connected! IP address: %s\n", WiFi.localIP().toString().c_str());
+        ESP_LOGI(TAG, "Connected! IP address: %s", WiFi.localIP().toString().c_str());
+        
+        // Set DNS for faster DNS resolution
+        WiFi.setDNS(IPAddress(8, 8, 8, 8), IPAddress(114, 114, 114, 114));
+
+        // Set time, HTTPS needs it
+        configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+        time_t now = 0;
+        while (now < 1700000000) {  // wait until time is set
+            delay(200);
+            time(&now);
+        }
+
         return true;
     } else {
-        Serial.println("\n[WiFi] Connection timeout");
+        ESP_LOGE(TAG, "Connection timeout");
         WiFi.disconnect();
         return false;
     }
 }
 
 bool WiFiControl::showWiFiSettingsUI() {
-    Serial.println("[WiFi] Initializing WiFi settings UI...");
+    ESP_LOGI(TAG, "Initializing WiFi settings UI...");
     
     // Initialize UI if not already done
     if (!uiInitialized) {
@@ -111,7 +134,7 @@ bool WiFiControl::showWiFiSettingsUI() {
     // Set placeholder text
     lv_textarea_set_placeholder_text(ui_InputPassword, "Enter WiFi password...");
     
-    Serial.println("[WiFi] WiFi settings UI ready. Waiting for user input...");
+    ESP_LOGI(TAG, "WiFi settings UI ready. Waiting for user input...");
     
     // Wait for user to connect (this is a blocking call in the current implementation)
     // In a real application, you might want to handle this differently
@@ -120,7 +143,7 @@ bool WiFiControl::showWiFiSettingsUI() {
 }
 
 void WiFiControl::closeWiFiSettingsUI() {
-    Serial.println("[WiFi] Closing WiFi settings UI and returning to main screen");
+    ESP_LOGI(TAG, "Closing WiFi settings UI and returning to main screen");
     
     // Destroy the WiFi settings screen
     ui_WIFI_Settings_screen_destroy();
@@ -133,11 +156,11 @@ void WiFiControl::closeWiFiSettingsUI() {
     // You can add code here to load your main application screen
     // For example: lv_disp_load_scr(your_main_screen);
     
-    Serial.println("[WiFi] WiFi settings UI closed");
+    ESP_LOGI(TAG, "WiFi settings UI closed");
 }
 
 void WiFiControl::scanAndPopulateNetworks() {
-    Serial.println("[WiFi] Scanning for available networks...");
+    ESP_LOGI(TAG, "Scanning for available networks...");
     
     // Start WiFi in station mode for scanning
     WiFi.mode(WIFI_STA);
@@ -145,7 +168,7 @@ void WiFiControl::scanAndPopulateNetworks() {
     delay(100);
     
     int n = WiFi.scanNetworks();
-    Serial.printf("[WiFi] Found %d networks\n", n);
+    ESP_LOGI(TAG, "Found %d networks", n);
     
     if (n == 0) {
         lv_dropdown_set_options(ui_InputSSIDs, "No networks found");
@@ -159,7 +182,7 @@ void WiFiControl::scanAndPopulateNetworks() {
         int32_t rssi = WiFi.RSSI(i);
         int32_t encryption = WiFi.encryptionType(i);
         
-        Serial.printf("[WiFi] %d: %s (%d dBm) %s\n", i, ssid.c_str(), rssi, 
+        ESP_LOGI(TAG, "%d: %s (%d dBm) %s", i, ssid.c_str(), rssi, 
                      (encryption == WIFI_AUTH_OPEN) ? "Open" : "Encrypted");
         
         if (options.length() > 0) {
@@ -177,11 +200,11 @@ void WiFiControl::scanAndPopulateNetworks() {
 
 bool WiFiControl::connectToNetwork(const String& ssid, const String& password) {
     if (ssid.length() == 0) {
-        Serial.println("[WiFi] Empty SSID provided");
+        ESP_LOGW(TAG, "Empty SSID provided");
         return false;
     }
     
-    Serial.printf("[WiFi] Attempting to connect to: %s\n", ssid.c_str());
+    ESP_LOGI(TAG, "Attempting to connect to: %s", ssid.c_str());
     
     WiFi.begin(ssid.c_str(), password.c_str());
     
@@ -190,11 +213,11 @@ bool WiFiControl::connectToNetwork(const String& ssid, const String& password) {
     while (WiFi.status() != WL_CONNECTED && attempts < 20) {
         delay(500);
         attempts++;
-        Serial.print(".");
+        // silent dot printing removed
     }
     
     if (WiFi.status() == WL_CONNECTED) {
-        Serial.printf("\n[WiFi] Connected! IP address: %s\n", WiFi.localIP().toString().c_str());
+        ESP_LOGI(TAG, "Connected! IP address: %s", WiFi.localIP().toString().c_str());
         
         // Save credentials for future use
         saveCredentials(ssid, password);
@@ -205,7 +228,7 @@ bool WiFiControl::connectToNetwork(const String& ssid, const String& password) {
         
         return true;
     } else {
-        Serial.println("\n[WiFi] Connection failed");
+        ESP_LOGE(TAG, "Connection failed");
         WiFi.disconnect();
         wifiConnected = false;
         return false;
@@ -215,7 +238,7 @@ bool WiFiControl::connectToNetwork(const String& ssid, const String& password) {
 void WiFiControl::saveCredentials(const String& ssid, const String& password) {
     preferences.putString("ssid", ssid);
     preferences.putString("pwd", password);
-    Serial.printf("[WiFi] Credentials saved for SSID: %s\n", ssid.c_str());
+    ESP_LOGI(TAG, "Credentials saved for SSID: %s", ssid.c_str());
 }
 
 bool WiFiControl::loadCredentials(String& ssid, String& password) {
@@ -223,7 +246,7 @@ bool WiFiControl::loadCredentials(String& ssid, String& password) {
     password = preferences.getString("pwd", "");
     
     if (ssid.length() > 0) {
-        Serial.printf("[WiFi] Loaded credentials for SSID: %s\n", ssid.c_str());
+        ESP_LOGI(TAG, "Loaded credentials for SSID: %s", ssid.c_str());
         return true;
     }
     
@@ -233,7 +256,7 @@ bool WiFiControl::loadCredentials(String& ssid, String& password) {
 void WiFiControl::clearCredentials() {
     preferences.remove("ssid");
     preferences.remove("pwd");
-    Serial.println("[WiFi] Credentials cleared");
+    ESP_LOGI(TAG, "Credentials cleared");
 }
 
 void WiFiControl::resetConnectButton() {
@@ -266,13 +289,13 @@ void WiFiControl::tick() {
         
         // If we just got disconnected
         if (wasConnected && !currentlyConnected) {
-            Serial.println("[WiFi] Connection lost!");
+            ESP_LOGW(TAG, "Connection lost!");
             wifiConnected = false;
             lastDisconnectionTime = currentTime;
         }
         // If we just got connected
         else if (!wasConnected && currentlyConnected) {
-            Serial.printf("[WiFi] Connection restored! IP: %s\n", WiFi.localIP().toString().c_str());
+            ESP_LOGI(TAG, "Connection restored! IP: %s", WiFi.localIP().toString().c_str());
             wifiConnected = true;
             lastDisconnectionTime = 0;
         }
@@ -283,7 +306,7 @@ void WiFiControl::tick() {
         if (!currentlyConnected && lastDisconnectionTime > 0 && 
             (currentTime - lastDisconnectionTime) > 10000) {
             
-            Serial.println("[WiFi] WiFi disconnected for too long, showing settings UI...");
+            ESP_LOGW(TAG, "WiFi disconnected for too long, showing settings UI...");
             
             // Only show UI if it's not already shown
             if (!uiInitialized) {
@@ -294,17 +317,17 @@ void WiFiControl::tick() {
 }
 
 void WiFiControl::showSettingsUI() {
-    Serial.println("[WiFi] Manually showing WiFi settings UI");
+    ESP_LOGI(TAG, "Manually showing WiFi settings UI");
     showWiFiSettingsUI();
 }
 
 void WiFiControl::connectButtonCallback(lv_event_t * e) {
     if (!instance) {
-        Serial.println("[WiFi] No WiFiControl instance available");
+        ESP_LOGE(TAG, "No WiFiControl instance available");
         return;
     }
     
-    Serial.println("[WiFi] Connect button pressed");
+    ESP_LOGI(TAG, "Connect button pressed");
     
     // Disable the connect button to prevent multiple clicks
     lv_obj_add_state(ui_BtnConnect, LV_STATE_DISABLED);
@@ -316,7 +339,7 @@ void WiFiControl::connectButtonCallback(lv_event_t * e) {
     
     // Check if a valid network is selected
     if (ssid.length() == 0 || ssid.indexOf("No networks found") >= 0) {
-        Serial.println("[WiFi] No network selected or no networks available");
+        ESP_LOGW(TAG, "No network selected or no networks available");
         lv_label_set_text(lv_obj_get_child(ui_BtnConnect, 0), "No Network!");
         delay(1000);
         instance->resetConnectButton();
@@ -335,7 +358,7 @@ void WiFiControl::connectButtonCallback(lv_event_t * e) {
     
     // Validate SSID
     if (selectedSSID.length() == 0) {
-        Serial.println("[WiFi] Invalid SSID selected");
+        ESP_LOGW(TAG, "Invalid SSID selected");
         lv_label_set_text(lv_obj_get_child(ui_BtnConnect, 0), "Invalid SSID!");
         delay(1000);
         instance->resetConnectButton();
@@ -345,11 +368,11 @@ void WiFiControl::connectButtonCallback(lv_event_t * e) {
     // Get password from text area
     String password = lv_textarea_get_text(ui_InputPassword);
     
-    Serial.printf("[WiFi] Attempting to connect to: %s\n", selectedSSID.c_str());
+    ESP_LOGI(TAG, "Attempting to connect to: %s", selectedSSID.c_str());
     
     // Attempt connection
     if (instance->connectToNetwork(selectedSSID, password)) {
-        Serial.println("[WiFi] Connection successful!");
+        ESP_LOGI(TAG, "Connection successful!");
         
         // Update button text to show success
         lv_label_set_text(lv_obj_get_child(ui_BtnConnect, 0), "Connected!");
@@ -358,7 +381,7 @@ void WiFiControl::connectButtonCallback(lv_event_t * e) {
         instance->closeWiFiSettingsUI();
         
     } else {
-        Serial.println("[WiFi] Connection failed!");
+        ESP_LOGE(TAG, "Connection failed!");
         
         // Show error message briefly, then reset button
         lv_label_set_text(lv_obj_get_child(ui_BtnConnect, 0), "Failed!");
@@ -367,4 +390,33 @@ void WiFiControl::connectButtonCallback(lv_event_t * e) {
         delay(2000);
         instance->resetConnectButton();
     }
+}
+
+void WiFiControl::POST(const String& url, const String& body) {
+    if (WiFi.status() != WL_CONNECTED) {
+        ESP_LOGW(TAG, "[HTTPS] Not connected to WiFi");
+        return;
+    }
+
+    ESP_LOGI(TAG, "[HTTPS] POST %s", url.c_str());
+
+    if (!https.begin(client, url)) {
+        ESP_LOGE(TAG, "[HTTPS] begin() failed");
+        return;
+    }
+
+    https.addHeader("Content-Type", "application/json");
+    int httpCode = https.POST(body);
+
+    if (httpCode > 0) {
+        ESP_LOGI(TAG, "[HTTPS] code: %d", httpCode);
+        String payload = https.getString();
+        if (payload.length() > 0) {
+            ESP_LOGI(TAG, "%s", payload.c_str());
+        }
+    } else {
+        ESP_LOGE(TAG, "[HTTPS] POST failed, error: %s", https.errorToString(httpCode).c_str());
+    }
+
+    https.end();
 }

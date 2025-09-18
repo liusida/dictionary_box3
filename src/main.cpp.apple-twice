@@ -1,0 +1,70 @@
+#include <Arduino.h>
+#include <WiFi.h>
+#include "netdb.h"
+// #include <esp_wifi.h>
+#include "drivers/audio_manager.h"
+
+static const char* SSID     = "StarLab_2.4G";
+static const char* PASSWORD = "1234567891";
+static const char* MP3_URL  = "https://dict.liusida.com/api/audio/stream?word=apple&type=word";
+// static const char* MP3_URL  = "http://192.168.1.164:1234/apple.mp3";
+
+// Audio manager instance
+AudioManager audioManager;
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) { delay(10); }
+
+  WiFi.mode(WIFI_STA);
+  WiFi.persistent(false);
+  WiFi.setSleep(false);
+  WiFi.setAutoReconnect(true);
+  WiFi.setTxPower(WIFI_POWER_19_5dBm);   // boost TX power
+
+  Serial.printf("Connecting to %s\n", SSID);
+  WiFi.begin(SSID, PASSWORD);
+  uint32_t t0 = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - t0 < 20000) {
+    delay(250);
+    Serial.print(".");
+  }
+  Serial.println();
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi connect timeout");
+    return;
+  }
+
+  Serial.print("WiFi connected. IP: ");
+  Serial.println(WiFi.localIP());
+
+  WiFi.setDNS(IPAddress(8, 8, 8, 8), IPAddress(114, 114, 114, 114));
+
+  // Initialize audio manager
+  if (!audioManager.begin()) {
+    Serial.println("Failed to initialize audio manager");
+    return;
+  }
+  
+  Serial.println("======================== Play MP3 file 1 ==========================");
+  // Play the MP3 file
+  if (!audioManager.play(MP3_URL)) {
+    Serial.println("Failed to play audio");
+    return;
+  }
+  
+  delay(10000);
+  Serial.println("======================== Play MP3 file 2 ==========================");
+  // Play the MP3 file
+  if (!audioManager.play(MP3_URL)) {
+    Serial.println("Failed to play audio");
+    return;
+  }
+
+  delay(10000);
+    
+}
+
+void loop() {
+  // no-op
+}

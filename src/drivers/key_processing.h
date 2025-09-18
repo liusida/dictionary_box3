@@ -14,8 +14,10 @@ extern KeyEvent pendingKeyEvent;
 /**
  * @brief Send key to LVGL for processing (thread-safe)
  * @param key Character to send
+ * @param key1 HID key code
+ * @param modifiers Modifier mask
  */
-void sendKeyToLVGL(char key);
+void sendKeyToLVGL(char key, uint8_t key1, uint8_t modifiers);
 
 /**
  * @brief Process queued keys (call this from main loop)

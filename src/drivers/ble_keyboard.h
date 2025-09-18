@@ -36,8 +36,8 @@ class BLEKeyboard {
     ClientCallbacks *clientCallbacks;
     ScanCallbacks *scanCallbacks;
 
-    // Key callback function pointer
-    typedef void (*KeyCallback)(char key);
+    // Key callback function pointer (char representation, hid key code, modifiers)
+    typedef void (*KeyCallback)(char key, uint8_t keyCode, uint8_t modifiers);
     KeyCallback keyCallback;
 
     // Private methods

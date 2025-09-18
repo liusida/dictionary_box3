@@ -1,112 +1,110 @@
+#include "GT911.h"
+#include "TFT_eSPI.h"
+#include "lvgl.h"
 #include <Arduino.h>
-#include <WiFi.h>
-#include <esp_wifi.h>
-#include "AudioTools.h"
-#include "AudioTools/AudioLibs/AudioBoardStream.h"
-#include "AudioTools/CoreAudio/AudioHttp/URLStream.h"
-#include "AudioTools/AudioCodecs/CodecMP3Helix.h"
 
-static const char* SSID     = "StarLab_2.4G";
-static const char* PASSWORD = "1234567891";
-static const char* MP3_URL  = "http://192.168.1.164:1234/output.mp3";
+#include "drivers/drivers.h"
+#include "ui/ui.h"
+#include "utils.h"
+#include "main_screen_control.h"
+#include "main.h"
+#include "esp_log.h"
+static const char *TAG = "App";
 
-// Audio board and output (ES8311)
-AudioBoard board{AudioDriverES8311, NoPins};
-AudioBoardStream out(board);
-AudioInfo info(32000, 2, 16);
+// Global objects
+TFT_eSPI tft = TFT_eSPI();
+GT911 touch = GT911();
+BLEKeyboard bleKeyboard;
+WiFiControl wifi;
+AudioManager audio;
 
-// Network stream and MP3 decoder pipeline
-URLStream url;                    // HTTP client stream (uses Arduino WiFi)
-MP3DecoderHelix mp3;              // MP3 decoder
-EncodedAudioStream decoded(&out, &mp3); // writes decoded PCM to I2S output
-StreamCopy copier(decoded, url, 4096);
+// State management
+AppState currentState = STATE_SPLASH;
+bool stateTransitioned = false;
+unsigned long lastStateCheck = 0;
 
-// Fix for removing ID3v2 header, some mp3 files would cause crash.
-void fixRemoveID3Info(Stream& s){
-  uint8_t hdr[10];
-  if (s.readBytes(hdr, 10) != 10) return;                 // not enough -> ignore
-  if (hdr[0]=='I' && hdr[1]=='D' && hdr[2]=='3') {
-    uint32_t sz = ((hdr[6]&0x7F)<<21)|((hdr[7]&0x7F)<<14)|((hdr[8]&0x7F)<<7)|(hdr[9]&0x7F);
-    uint32_t toSkip = sz;                                  // header already consumed
-    uint8_t buf[256];
-    while (toSkip) {
-      size_t n = s.readBytes(buf, toSkip > sizeof(buf) ? sizeof(buf) : toSkip);
-      if (!n) break;
-      toSkip -= n;
-    }
-  } else {
-    // Not ID3v2: we consumed 10 bytes; simplest workaround is to re-open the URL
-    // so we don't lose them:
-    url.end();
-    url.begin(MP3_URL, "audio/mpeg");
-  }
+// State management functions
+void enterSplashState() {
+    ESP_LOGI(TAG, "Entering SPLASH state");
+    currentState = STATE_SPLASH;
+    stateTransitioned = true;
+    loadScreen(ui_Splash);
 }
 
-void audioTask(void*){
-  for(;;){
-    copier.copy();
-    vTaskDelay(1);
-  }
+
+bool isSystemReady() {
+    // Check if both WiFi and BLE keyboard are ready
+    bool wifiReady = wifi.isConnected();
+    bool bleReady = bleKeyboard.isConnected();
+
+    // Only log status every 5 seconds to avoid spam
+    unsigned long currentTime = millis();
+    if (currentTime - lastStateCheck > 5000) {
+        ESP_LOGI(TAG, "System status - WiFi: %s, BLE: %s", wifiReady ? "Ready" : "Not Ready", bleReady ? "Ready" : "Not Ready");
+        lastStateCheck = currentTime;
+    }
+
+    return wifiReady && bleReady;
 }
 
 void setup() {
-  Serial.begin(115200);
-  while (!Serial) { delay(10); }
+    Serial.begin(115200);
 
-  WiFi.mode(WIFI_STA);
-  WiFi.persistent(false);
-  WiFi.setSleep(false);
-  WiFi.setAutoReconnect(true);
-  WiFi.setTxPower(WIFI_POWER_19_5dBm);   // boost TX power
+    // Reset display and turn on backlight
+    manualResetDisplay();
 
-  Serial.printf("Connecting to %s\n", SSID);
-  WiFi.begin(SSID, PASSWORD);
+    audio.begin();
 
-  uint32_t t0 = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - t0 < 20000) {
-    delay(250);
-    Serial.print(".");
-  }
-  Serial.println();
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("WiFi connect timeout");
-    return;
-  }
+    // Initialize TFT display
+    tft.init();
+    tft.setRotation(3);
 
-  Serial.print("WiFi connected. IP: ");
-  Serial.println(WiFi.localIP());
-  
-  // Configure audio pins for ESP32-S3 Box 3
-  Serial.println("initializing audio pins...");
-  DriverPins pins;
-  pins.addI2C(PinFunction::CODEC, 18, 8);           // SCL=18, SDA=8
-  pins.addI2S(PinFunction::CODEC, 2, 17, 45, 15);   // MCLK=2, BCLK=17, WS=45, DOUT=15
-  pins.addPin(PinFunction::PA, PA_PIN, PinLogic::Output);
-  board.setPins(pins);
+    // Initialize touch controller
+    initTouch(touch);
 
-  // Start audio output
-  Serial.println("starting I2S & codec...");
-  out.begin();
-  out.setAudioInfo(info);
-  out.setVolume(0.7f);
+    // Initialize LVGL
+    lv_init();
+    initLVGLDisplay(tft, touch);
 
-  // Start network stream and decoder pipeline
-  Serial.println("opening URL stream...");
-  url.setTimeout(10000);
-  if (!url.begin(MP3_URL, "audio/mpeg")) {
-    Serial.println("URL open failed");
-    return;
-  }
-  fixRemoveID3Info(url);
+    // Initialize UI
+    ui_init();
+    // Start in splash state
+    enterSplashState();
 
-  // Initialize encoded stream so decoder can push PCM to output
-  decoded.begin();
-  copier.begin();
-  // Avoid overrunning target by honoring availableForWrite()
-  copier.setCheckAvailableForWrite(true);
-  xTaskCreatePinnedToCore(audioTask, "audio", 4096, nullptr, 10, nullptr, 0);
+    // Initialize BLE keyboard functionality
+    bleKeyboard.setPowerLevel(-20);
+    bleKeyboard.begin();
+
+    // Set callback to connect BLE keyboard to LVGL key processing
+    bleKeyboard.setKeyCallback(sendKeyToLVGL);
+
+    // Initialize WiFi - this will try saved credentials first, then show UI if needed
+    wifi.begin();
 }
 
 void loop() {
-  // no-op
+    // Handle LVGL tasks
+    handleLVGLTasks();
+
+    bleKeyboard.tick();
+    wifi.tick();
+
+    // Process queued keyboard events (safe for LVGL operations)
+    processQueuedKeys();
+
+    // State machine logic
+    switch (currentState) {
+    case STATE_SPLASH:
+        // Check if system is ready to transition to main
+        if (isSystemReady()) {
+            enterMainState();
+        }
+        break;
+
+    case STATE_MAIN:
+        // just stay here
+        break;
+    }
+
+    delay(5); // Small delay for LVGL
 }

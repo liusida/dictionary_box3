@@ -8,12 +8,15 @@
 #include "utils.h"
 #include "main_screen_control.h"
 #include "main.h"
+#include "esp_log.h"
+static const char *TAG = "App";
 
 // Global objects
 TFT_eSPI tft = TFT_eSPI();
 GT911 touch = GT911();
 BLEKeyboard bleKeyboard;
 WiFiControl wifi;
+AudioManager audio;
 
 // State management
 AppState currentState = STATE_SPLASH;
@@ -22,7 +25,7 @@ unsigned long lastStateCheck = 0;
 
 // State management functions
 void enterSplashState() {
-    Serial.println("[App] Entering SPLASH state");
+    ESP_LOGI(TAG, "Entering SPLASH state");
     currentState = STATE_SPLASH;
     stateTransitioned = true;
     loadScreen(ui_Splash);
@@ -37,7 +40,7 @@ bool isSystemReady() {
     // Only log status every 5 seconds to avoid spam
     unsigned long currentTime = millis();
     if (currentTime - lastStateCheck > 5000) {
-        Serial.printf("[App] System status - WiFi: %s, BLE: %s\n", wifiReady ? "Ready" : "Not Ready", bleReady ? "Ready" : "Not Ready");
+        ESP_LOGI(TAG, "System status - WiFi: %s, BLE: %s", wifiReady ? "Ready" : "Not Ready", bleReady ? "Ready" : "Not Ready");
         lastStateCheck = currentTime;
     }
 
@@ -50,6 +53,8 @@ void setup() {
     // Reset display and turn on backlight
     manualResetDisplay();
 
+    audio.begin();
+    
     // Initialize TFT display
     tft.init();
     tft.setRotation(3);
@@ -75,6 +80,7 @@ void setup() {
 
     // Initialize WiFi - this will try saved credentials first, then show UI if needed
     wifi.begin();
+
 }
 
 void loop() {

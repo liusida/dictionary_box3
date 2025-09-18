@@ -10,30 +10,30 @@ void printMemoryStatus() {
   uint32_t freePsram = ESP.getFreePsram();
   uint32_t totalPsram = ESP.getPsramSize();
   
-  Serial.println("=== Memory Status ===");
-  Serial.printf("Internal RAM (SRAM):\n");
-  Serial.printf("  Free: %u bytes (%.2f KB)\n", freeHeap, freeHeap / 1024.0);
-  Serial.printf("  Total: %u bytes (%.2f KB)\n", totalHeap, totalHeap / 1024.0);
-  Serial.printf("  Min Free: %u bytes (%.2f KB)\n", minFreeHeap, minFreeHeap / 1024.0);
-  Serial.printf("  Used: %u bytes (%.2f KB)\n", totalHeap - freeHeap, (totalHeap - freeHeap) / 1024.0);
-  Serial.printf("  Usage: %.1f%%\n", ((float)(totalHeap - freeHeap) / totalHeap) * 100);
+  ESP_LOGI("Utils", "=== Memory Status ===");
+  ESP_LOGI("Utils", "Internal RAM (SRAM):");
+  ESP_LOGI("Utils", "  Free: %u bytes (%.2f KB)", freeHeap, freeHeap / 1024.0);
+  ESP_LOGI("Utils", "  Total: %u bytes (%.2f KB)", totalHeap, totalHeap / 1024.0);
+  ESP_LOGI("Utils", "  Min Free: %u bytes (%.2f KB)", minFreeHeap, minFreeHeap / 1024.0);
+  ESP_LOGI("Utils", "  Used: %u bytes (%.2f KB)", totalHeap - freeHeap, (totalHeap - freeHeap) / 1024.0);
+  ESP_LOGI("Utils", "  Usage: %.1f%%", ((float)(totalHeap - freeHeap) / totalHeap) * 100);
   
   if (totalPsram > 0) {
-    Serial.printf("SPIRAM (PSRAM):\n");
-    Serial.printf("  Free: %u bytes (%.2f KB)\n", freePsram, freePsram / 1024.0);
-    Serial.printf("  Total: %u bytes (%.2f KB)\n", totalPsram, totalPsram / 1024.0);
-    Serial.printf("  Used: %u bytes (%.2f KB)\n", totalPsram - freePsram, (totalPsram - freePsram) / 1024.0);
-    Serial.printf("  Usage: %.1f%%\n", ((float)(totalPsram - freePsram) / totalPsram) * 100);
+    ESP_LOGI("Utils", "SPIRAM (PSRAM):");
+    ESP_LOGI("Utils", "  Free: %u bytes (%.2f KB)", freePsram, freePsram / 1024.0);
+    ESP_LOGI("Utils", "  Total: %u bytes (%.2f KB)", totalPsram, totalPsram / 1024.0);
+    ESP_LOGI("Utils", "  Used: %u bytes (%.2f KB)", totalPsram - freePsram, (totalPsram - freePsram) / 1024.0);
+    ESP_LOGI("Utils", "  Usage: %.1f%%", ((float)(totalPsram - freePsram) / totalPsram) * 100);
   } else {
-    Serial.println("SPIRAM (PSRAM): Not available");
+    ESP_LOGW("Utils", "SPIRAM (PSRAM): Not available");
   }
   
   // Additional system info
-  Serial.printf("Chip Model: %s\n", ESP.getChipModel());
-  Serial.printf("Chip Revision: %d\n", ESP.getChipRevision());
-  Serial.printf("CPU Frequency: %d MHz\n", ESP.getCpuFreqMHz());
-  Serial.printf("Flash Size: %u bytes (%.2f MB)\n", ESP.getFlashChipSize(), ESP.getFlashChipSize() / (1024.0 * 1024.0));
-  Serial.println("===================");
+  ESP_LOGI("Utils", "Chip Model: %s", ESP.getChipModel());
+  ESP_LOGI("Utils", "Chip Revision: %d", ESP.getChipRevision());
+  ESP_LOGI("Utils", "CPU Frequency: %d MHz", ESP.getCpuFreqMHz());
+  ESP_LOGI("Utils", "Flash Size: %u bytes (%.2f MB)", ESP.getFlashChipSize(), ESP.getFlashChipSize() / (1024.0 * 1024.0));
+  ESP_LOGI("Utils", "===================");
 }
 
 void manualResetDisplay() {
@@ -50,5 +50,5 @@ void manualResetDisplay() {
   // Turn on backlight
   digitalWrite(TFT_BL, HIGH);
   
-  Serial.println("Display reset and backlight enabled");
+  ESP_LOGI("Utils", "Display reset and backlight enabled");
 }

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <WiFi.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <Preferences.h>
 #include "lvgl.h"
 
@@ -64,7 +66,9 @@ private:
     unsigned long lastConnectionCheck;
     unsigned long lastDisconnectionTime;
     bool wasConnected;
-    
+    NetworkClientSecure client;
+    HTTPClient https;
+
     // Try to connect using saved credentials
     bool connectWithSavedCredentials();
     
@@ -97,4 +101,6 @@ private:
     
     // Instance pointer for static callback
     static WiFiControl* instance;
+
+    void POST(const String& url, const String& body);
 };

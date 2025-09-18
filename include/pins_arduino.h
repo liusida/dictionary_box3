@@ -45,6 +45,7 @@ static const uint8_t T14 = 14;
 #define I2S_SCLK 17
 #define I2S_SDIN 16
 #define I2S_DOUT 15
+#define I2S_WS   45
 
 #define PA_PIN   46  //Audio Amp Power
 #define MUTE_PIN 1   //MUTE Button

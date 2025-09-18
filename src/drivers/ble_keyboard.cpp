@@ -1,4 +1,6 @@
 #include "ble_keyboard.h"
+#include "esp_log.h"
+static const char *TAG = "BLE";
 
 // Client callbacks implementation
 class BLEKeyboard::ClientCallbacks : public NimBLEClientCallbacks {
@@ -8,11 +10,11 @@ public:
     ClientCallbacks(BLEKeyboard* kb) : keyboard(kb) {}
     
     void onConnect(NimBLEClient *pClient) override { 
-        Serial.printf("[BLE] Connected\n"); 
+        ESP_LOGI(TAG, "Connected"); 
     }
 
     void onDisconnect(NimBLEClient *pClient, int reason) override {
-        Serial.printf("[BLE] %s Disconnected, reason = %d - Starting scan\n", 
+        ESP_LOGW(TAG, "%s Disconnected, reason = %d - Starting scan", 
                      pClient->getPeerAddress().toString().c_str(), reason);
         keyboard->pScan->start(keyboard->scanTimeMs, false, true);
     }
@@ -32,9 +34,9 @@ public:
         String deviceAddr = advertisedDevice->getAddress().toString().c_str();
         
         if (deviceName.length() > 0) {
-            Serial.printf("[BLE] Found Device: %s (%s)\n", deviceName.c_str(), deviceAddr.c_str());
+            ESP_LOGD(TAG, "Found Device: %s (%s)", deviceName.c_str(), deviceAddr.c_str());
         } else {
-            Serial.printf("[BLE] Found Device: %s\n", deviceAddr.c_str());
+            ESP_LOGD(TAG, "Found Device: %s", deviceAddr.c_str());
         }
         
         if (keyboard->preferences.getString("addr").equals(String(advertisedDevice->getAddress().toString().c_str()))) {
@@ -44,7 +46,7 @@ public:
             found = true;
         }
         if (found) {
-            Serial.printf("[BLE] Found Our Service\n");
+            ESP_LOGI(TAG, "Found Our Service");
             keyboard->preferences.putString("addr", advertisedDevice->getAddress().toString().c_str());
             /** stop scan before connecting */
             keyboard->pScan->stop();
@@ -57,7 +59,7 @@ public:
 
     /** Callback to process the results of the completed scan or restart it */
     void onScanEnd(const NimBLEScanResults &results, int reason) override {
-        Serial.printf("[BLE] Scan Ended, reason: %d, device count: %d; Restarting scan\n", reason, results.getCount());
+        ESP_LOGI(TAG, "Scan Ended, reason: %d, device count: %d; Restarting scan", reason, results.getCount());
         delay(keyboard->scanRestartIntervalMs); // wait before starting scan again
         keyboard->pScan->start(keyboard->scanTimeMs, false, true);
     }
@@ -94,12 +96,12 @@ void BLEKeyboard::begin(uint32_t scanRestartIntervalMs) {
     this->scanRestartIntervalMs = scanRestartIntervalMs;
     // Initialize Preferences to access NVS (Non-Volatile Storage)
     if (!preferences.begin("ble_config", false)) {
-        Serial.println("[BLE] Failed to open preferences");
+        ESP_LOGE(TAG, "Failed to open preferences");
     } else {
-        Serial.println("[BLE] Preferences initialized successfully");
+        ESP_LOGI(TAG, "Preferences initialized successfully");
     }
 
-    Serial.printf("[BLE] Starting NimBLE Client\n");
+    ESP_LOGI(TAG, "Starting NimBLE Client");
 
     /** Initialize NimBLE and set the device name */
     NimBLEDevice::init("NimBLE-Client");
@@ -126,7 +128,7 @@ void BLEKeyboard::begin(uint32_t scanRestartIntervalMs) {
 
     /** Start scanning for advertisers */
     pScan->start(scanTimeMs);
-    Serial.printf("[BLE] Scanning for peripherals\n");
+    ESP_LOGI(TAG, "Scanning for peripherals");
 }
 
 void BLEKeyboard::tick() {
@@ -135,10 +137,9 @@ void BLEKeyboard::tick() {
         doConnect = false;
         /** Found a device we want to connect to, do it now */
         if (connectToServer()) {
-            Serial.printf("[BLE] Success! we should now be getting notifications, no "
-                         "scanning for more!\n");
+            ESP_LOGI(TAG, "Success! we should now be getting notifications, no scanning for more!");
         } else {
-            Serial.printf("[BLE] Failed to connect, no starting scan\n");
+            ESP_LOGW(TAG, "Failed to connect, no starting scan");
         }
     }
 }
@@ -157,15 +158,14 @@ void BLEKeyboard::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, ui
     if (length > 0 && pData[0] == 0x00) { // Standard keyboard report
         if (length >= 3) {
             // BLE keyboard reports: [modifiers, reserved, key1, key2, key3, key4, key5, key6]
+            ESP_LOGD("keypress", "BLE keyboard report: %d, %d, %d, %d, %d, %d, %d, %d", pData[0], pData[1], pData[2], pData[3], pData[4], pData[5], pData[6], pData[7]);
             uint8_t modifiers = pData[0];
             uint8_t key1 = pData[2];
             
             if (key1 != 0x00) { // Key pressed
                 if (keyboardInstance && keyboardInstance->keyCallback) {
-                    char key = keyboardInstance->convertKeyCodeToChar(key1, modifiers);
-                    if (key != 0) {
-                        keyboardInstance->keyCallback(key);
-                    }
+                    char key1_char = keyboardInstance->convertKeyCodeToChar(key1, modifiers);
+                    keyboardInstance->keyCallback(key1_char, key1, modifiers);
                 }
             }
         }
@@ -185,10 +185,10 @@ bool BLEKeyboard::connectToServer() {
         pClient = NimBLEDevice::getClientByPeerAddress(advDevice->getAddress());
         if (pClient) {
             if (!pClient->connect(advDevice, false)) {
-                Serial.printf("[BLE] Reconnect failed\n");
+                ESP_LOGW(TAG, "Reconnect failed");
                 return false;
             }
-            Serial.printf("[BLE] Reconnected client\n");
+            ESP_LOGI(TAG, "Reconnected client");
         } else {
             /**
              *  We don't already have a client that knows this device,
@@ -201,13 +201,13 @@ bool BLEKeyboard::connectToServer() {
     /** No client to reuse? Create a new one. */
     if (!pClient) {
         if (NimBLEDevice::getCreatedClientCount() >= NIMBLE_MAX_CONNECTIONS) {
-            Serial.printf("[BLE] Max clients reached - no more connections available\n");
+            ESP_LOGE(TAG, "Max clients reached - no more connections available");
             return false;
         }
 
         pClient = NimBLEDevice::createClient();
 
-        Serial.printf("[BLE] New client created\n");
+        ESP_LOGI(TAG, "New client created");
 
         pClient->setClientCallbacks(clientCallbacks, false);
         /**
@@ -227,19 +227,19 @@ bool BLEKeyboard::connectToServer() {
             /** Created a client but failed to connect, don't need to keep it as it
              * has no data */
             NimBLEDevice::deleteClient(pClient);
-            Serial.printf("[BLE] Failed to connect, deleted client\n");
+            ESP_LOGW(TAG, "Failed to connect, deleted client");
             return false;
         }
     }
 
     if (!pClient->isConnected()) {
         if (!pClient->connect(advDevice)) {
-            Serial.printf("[BLE] Failed to connect\n");
+            ESP_LOGW(TAG, "Failed to connect");
             return false;
         }
     }
 
-    Serial.printf("[BLE] Connected to: %s RSSI: %d\n", pClient->getPeerAddress().toString().c_str(), pClient->getRssi());
+    ESP_LOGI(TAG, "Connected to: %s RSSI: %d", pClient->getPeerAddress().toString().c_str(), pClient->getRssi());
 
     NimBLERemoteService *pSvc = nullptr;
 
@@ -248,15 +248,15 @@ bool BLEKeyboard::connectToServer() {
         std::vector<NimBLERemoteCharacteristic *> pChars = pSvc->getCharacteristics(true);
         for (const auto &chr : pChars) {
             if (chr->canNotify()) {
-                Serial.printf("[BLE] Subscribing to Characteristic UUID: %s, Handle: %d\n", chr->getUUID().toString().c_str(), chr->getHandle());
+                ESP_LOGI(TAG, "Subscribing to Characteristic UUID: %s, Handle: %d", chr->getUUID().toString().c_str(), chr->getHandle());
                 chr->subscribe(true, notifyCB);
             }
         }
     } else {
-        Serial.printf("[BLE] %s service not found.\n", BLE_SERVICE_UUID);
+        ESP_LOGW(TAG, "%s service not found.", BLE_SERVICE_UUID);
     }
 
-    Serial.printf("[BLE] Done with this device!\n");
+    ESP_LOGI(TAG, "Done with this device!");
     return true;
 }
 
