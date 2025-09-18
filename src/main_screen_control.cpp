@@ -16,19 +16,21 @@ static const char *TAG = "MainScreen";
 static const char *LOOKUP_URL = "https://dict.liusida.com/api/define";
 static const char *AUDIO_URL = "https://dict.liusida.com/api/audio/stream";
 
-void readWord() {
+static inline void playCurrentWordAudio(const char* type) {
   String word = lv_label_get_text(ui_TxtWord);
-  playAudioFromServer(word.c_str(), "word");
+  playAudioFromServer(word.c_str(), type);
+}
+
+void readWord() {
+  playCurrentWordAudio("word");
 }
 
 void readExplanation() {
-  String explanation = lv_label_get_text(ui_TxtExplanation);
-  playAudioFromServer(explanation.c_str(), "explanation");
+  playCurrentWordAudio("explanation");
 }
 
 void readSampleSentence() {
-  String sampleSentence = lv_label_get_text(ui_TxtSampleSentence);
-  playAudioFromServer(sampleSentence.c_str(), "sample_sentence");
+  playCurrentWordAudio("sample_sentence");
 }
 
 // Minimal URL encoder for query parameters

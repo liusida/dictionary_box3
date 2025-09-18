@@ -50,6 +50,9 @@ bool isSystemReady() {
 void setup() {
     Serial.begin(115200);
 
+    // Show INFO and above, hide DEBUG/VERBOSE
+    esp_log_level_set("*", ESP_LOG_INFO);
+
     // Reset display and turn on backlight
     manualResetDisplay();
 
@@ -78,6 +81,9 @@ void setup() {
     // Set callback to connect BLE keyboard to LVGL key processing
     bleKeyboard.setKeyCallback(sendKeyToLVGL);
 
+    // Initialize key processing
+    getKeyProcessing().begin();
+
     // Initialize WiFi - this will try saved credentials first, then show UI if needed
     wifi.begin();
 }
@@ -89,8 +95,8 @@ void loop() {
     bleKeyboard.tick();
     wifi.tick();
 
-    // Process queued keyboard events (safe for LVGL operations)
-    processQueuedKeys();
+    // Process queued keyboard events and function actions
+    getKeyProcessing().tick();
 
     // State machine logic
     switch (currentState) {

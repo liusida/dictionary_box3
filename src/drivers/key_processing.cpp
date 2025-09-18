@@ -3,101 +3,167 @@
 #include "main_screen_control.h"
 #include "audio_manager.h"
 #include "esp_log.h"
+#include "utils.h"
 
 extern AudioManager audio;
 extern AppState currentState;
 
-// Key event queue for safe LVGL operations
-KeyEvent pendingKeyEvent = {0, false};
-void (*submitCallback)() = nullptr;
-void (*keyInCallback)(char key) = nullptr;
-
 static const char *TAG = "KeyProc";
 
-// Function to queue keyboard input for safe processing in main loop
-void sendKeyToLVGL(char key, uint8_t key1, uint8_t modifiers) {
-    if (key != 0) {
-        // Store the key for processing in main loop (safe for BLE callback)
-        pendingKeyEvent.key = key;
-        pendingKeyEvent.valid = true;
+// ------------------- KeyProcessing class -------------------
 
-        ESP_LOGD(TAG, "Queued key: '%c' (0x%02X)", key, (unsigned char)key);
-    } else {
-        ESP_LOGD("keypress", "Functional key: %d, %d", key1, modifiers);
-        static float currentVolume = 0.7f; // 0.0 .. 1.0
-        if (key1 == 67) { // F10
-            currentVolume -= 0.05f;
-            if (currentVolume < 0.0f) currentVolume = 0.0f;
-            ESP_LOGD(TAG, "Volume: %f", currentVolume);
-            audio.setVolume(currentVolume);
-        } else if (key1 == 68) { // F11
-            currentVolume += 0.05f;
-            if (currentVolume > 1.0f) currentVolume = 1.0f;
-            ESP_LOGD(TAG, "Volume: %f", currentVolume);
-            audio.setVolume(currentVolume);
-        } else if (key1 == 59) { // F2
-            if (currentState == STATE_MAIN) {
-                readWord();
-            }
-        } else if (key1 == 60) { // F3
-            if (currentState == STATE_MAIN) {
-                readExplanation();
-            }
-        } else if (key1 == 61) { // F4
-            if (currentState == STATE_MAIN) {
-                readSampleSentence();
-            }
-        }
-    }
+KeyProcessing::KeyProcessing()
+  : pendingKeyEvent{0, false}, funcHead(0), funcTail(0), submitCallback(nullptr), keyInCallback(nullptr) {
+  for (int i = 0; i < kFunctionQueueSize; ++i) {
+    funcQueue[i] = KeyFunctionAction::None;
+  }
 }
 
-void setSubmitCallback(void (*callback)()) { submitCallback = callback; }
-void setKeyInCallback(void (*callback)(char key)) { keyInCallback = callback; }
+void KeyProcessing::begin() {
+}
 
-// Function to process queued keys (call this from main loop)
-void processQueuedKeys() {
-    if (!pendingKeyEvent.valid)
-        return;
+void KeyProcessing::setSubmitCallback(void (*callback)()) { submitCallback = callback; }
+void KeyProcessing::setKeyInCallback(void (*callback)(char key)) { keyInCallback = callback; }
 
-    char key = pendingKeyEvent.key;
-    pendingKeyEvent.valid = false; // Clear the event
+void KeyProcessing::enqueueFunction(KeyFunctionAction action) {
+  uint8_t nextHead = (funcHead + 1) % kFunctionQueueSize;
+  if (nextHead == funcTail) {
+    return;
+  }
+  funcQueue[funcHead] = action;
+  funcHead = nextHead;
+}
 
-    // Now do the LVGL operations safely in main loop context
-    lv_group_t *group = lv_group_get_default();
-    lv_obj_t *focused = lv_group_get_focused(group);
+bool KeyProcessing::dequeueFunction(KeyFunctionAction &actionOut) {
+  if (funcHead == funcTail) {
+    return false;
+  }
+  actionOut = funcQueue[funcTail];
+  funcQueue[funcTail] = KeyFunctionAction::None;
+  funcTail = (funcTail + 1) % kFunctionQueueSize;
+  return true;
+}
 
-    ESP_LOGD(TAG, "Processing key: '%c' (0x%02X), Group=%p, Focused=%p", key, (unsigned char)key, (void *)group, (void *)focused);
+void KeyProcessing::sendKeyToLVGL(char key, uint8_t key1, uint8_t modifiers) {
+  if (key != 0) {
+    pendingKeyEvent.key = key;
+    pendingKeyEvent.valid = true;
+    ESP_LOGD(TAG, "Queued key: '%c' (0x%02X)", key, (unsigned char)key);
+  } else {
+    ESP_LOGD("keypress", "Functional key: %d, %d", key1, modifiers);
+    if (key1 == 67) {
+      enqueueFunction(KeyFunctionAction::VolumeDown);
+    } else if (key1 == 68) {
+      enqueueFunction(KeyFunctionAction::VolumeUp);
+    } else if (key1 == 58) { // F1
+      enqueueFunction(KeyFunctionAction::PrintMemoryStatus);
+    } else if (key1 == 59) {
+      enqueueFunction(KeyFunctionAction::ReadWord);
+    } else if (key1 == 60) {
+      enqueueFunction(KeyFunctionAction::ReadExplanation);
+    } else if (key1 == 61) {
+      enqueueFunction(KeyFunctionAction::ReadSampleSentence);
+    }
+  }
+}
 
-    if (focused) {
-        // Check if it's a text area
-        if (lv_obj_has_class(focused, &lv_textarea_class)) {
-            ESP_LOGD(TAG, "Processing text area input");
-            // Handle text area
-            if (key == 0x08) { // Backspace
-                lv_textarea_delete_char(focused);
-                if (keyInCallback) {
-                    keyInCallback(key);
-                }
-            } else if (key == '\n') { // Enter
-                lv_textarea_t *ta = (lv_textarea_t *)focused;
-                if (ta->one_line) {
-                    // call a callback (submit the form)
-                    if (submitCallback) {
-                        submitCallback();
-                    }
-                } else {
-                    lv_textarea_add_char(focused, '\n');
-                }
-            } else if (key >= 32 && key <= 126) { // Printable characters
-                lv_textarea_add_char(focused, key);
-                if (keyInCallback) {
-                    keyInCallback(key);
-                }
-            }
+void KeyProcessing::processQueuedKeys() {
+  if (!pendingKeyEvent.valid)
+    return;
+
+  char key = pendingKeyEvent.key;
+  pendingKeyEvent.valid = false;
+
+  lv_group_t *group = lv_group_get_default();
+  lv_obj_t *focused = lv_group_get_focused(group);
+
+  ESP_LOGD(TAG, "Processing key: '%c' (0x%02X), Group=%p, Focused=%p", key, (unsigned char)key, (void *)group, (void *)focused);
+
+  if (focused) {
+    if (lv_obj_has_class(focused, &lv_textarea_class)) {
+      ESP_LOGD(TAG, "Processing text area input");
+      if (key == 0x08) {
+        lv_textarea_delete_char(focused);
+        if (keyInCallback) {
+          keyInCallback(key);
+        }
+      } else if (key == '\n') {
+        lv_textarea_t *ta = (lv_textarea_t *)focused;
+        if (ta->one_line) {
+          if (submitCallback) {
+            submitCallback();
+          }
         } else {
-            ESP_LOGV(TAG, "Focused object is not a text area");
+          lv_textarea_add_char(focused, '\n');
         }
+      } else if (key >= 32 && key <= 126) {
+        lv_textarea_add_char(focused, key);
+        if (keyInCallback) {
+          keyInCallback(key);
+        }
+      }
     } else {
-        ESP_LOGV(TAG, "No focused object");
+      ESP_LOGV(TAG, "Focused object is not a text area");
     }
+  } else {
+    ESP_LOGV(TAG, "No focused object");
+  }
 }
+
+void KeyProcessing::processQueuedFunctions() {
+  static float currentVolume = 0.7f;
+  KeyFunctionAction action;
+  while (dequeueFunction(action)) {
+    switch (action) {
+      case KeyFunctionAction::VolumeDown:
+        currentVolume -= 0.05f;
+        if (currentVolume < 0.0f) currentVolume = 0.0f;
+        ESP_LOGD(TAG, "Volume: %f", currentVolume);
+        audio.setVolume(currentVolume);
+        break;
+      case KeyFunctionAction::VolumeUp:
+        currentVolume += 0.05f;
+        if (currentVolume > 1.0f) currentVolume = 1.0f;
+        ESP_LOGD(TAG, "Volume: %f", currentVolume);
+        audio.setVolume(currentVolume);
+        break;
+      case KeyFunctionAction::PrintMemoryStatus:
+        printMemoryStatus();
+        break;
+      case KeyFunctionAction::ReadWord:
+        if (currentState == STATE_MAIN) {
+          readWord();
+        }
+        break;
+      case KeyFunctionAction::ReadExplanation:
+        if (currentState == STATE_MAIN) {
+          readExplanation();
+        }
+        break;
+      case KeyFunctionAction::ReadSampleSentence:
+        if (currentState == STATE_MAIN) {
+          readSampleSentence();
+        }
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+void KeyProcessing::tick() {
+  processQueuedKeys();
+  processQueuedFunctions();
+}
+
+// ------------------- Global instance & wrappers -------------------
+
+static KeyProcessing g_keyProcessing;
+
+KeyProcessing& getKeyProcessing() { return g_keyProcessing; }
+
+// Legacy wrappers
+void sendKeyToLVGL(char key, uint8_t key1, uint8_t modifiers) { g_keyProcessing.sendKeyToLVGL(key, key1, modifiers); }
+void processQueuedKeys() { g_keyProcessing.processQueuedKeys(); }
+void setSubmitCallback(void (*callback)()) { g_keyProcessing.setSubmitCallback(callback); }
+void setKeyInCallback(void (*callback)(char key)) { g_keyProcessing.setKeyInCallback(callback); }

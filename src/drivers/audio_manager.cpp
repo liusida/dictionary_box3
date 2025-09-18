@@ -5,6 +5,8 @@
 #include "esp_log.h"
 
 static const char *TAG = "AudioManager";
+// Route allocations > 256 bytes to PSRAM if available
+static MemoryManager s_audioMem(256);
 
 AudioManager::AudioManager()
     : board(AudioDriverES8311, NoPins), out(board), info(32000, 2, 16), url(nullptr), mp3(), decoded(out, mp3), copier(nullptr),

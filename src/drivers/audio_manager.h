@@ -9,6 +9,7 @@
 #include "AudioTools/AudioLibs/AudioBoardStream.h"
 #include "AudioTools/CoreAudio/AudioHttp/URLStream.h"
 #include "AudioTools/AudioCodecs/CodecMP3Helix.h"
+#include "AudioTools/AudioLibs/MemoryManager.h"
 
 class EncodedAudioStreamPatch : public EncodedAudioStream {
 // we use this patch class to modify the protected enc_out. once the issue is resovled, we can remove this class.
