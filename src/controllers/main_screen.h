@@ -15,16 +15,16 @@ extern "C" {
 }
 
 /**
- * @brief Controller for the main screen UI
+ * @brief Main screen manager
  * 
  * Handles all UI logic for the main screen, including word lookup,
  * audio playback, and user input. Separated from business logic
  * for better maintainability.
  */
-class MainScreenController {
+class MainScreen {
 public:
-    MainScreenController(Services& services);
-    ~MainScreenController();
+    MainScreen(Services& services);
+    ~MainScreen();
     
     /**
      * @brief Initialize the controller
@@ -99,5 +99,5 @@ private:
     // Static callbacks for LVGL
     static void submitFormCallback();
     static void keyInCallback(char key);
-    static MainScreenController* instance_;
+    static MainScreen* instance_;
 };

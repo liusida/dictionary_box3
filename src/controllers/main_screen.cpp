@@ -1,27 +1,27 @@
-#include "main_screen_controller.h"
+#include "main_screen.h"
 #include "drivers/lvgl_drive.h"
 #include "ui/ui.h"
 #include "core/log.h"
 #include "lvgl.h"
 
-static const char *TAG = "MainScreenController";
+static const char *TAG = "MainScreen";
 
 // Static instance for callbacks
-MainScreenController* MainScreenController::instance_ = nullptr;
+MainScreen* MainScreen::instance_ = nullptr;
 
-MainScreenController::MainScreenController(Services& services)
+MainScreen::MainScreen(Services& services)
     : services_(services), initialized_(false) {
     instance_ = this;
 }
 
-MainScreenController::~MainScreenController() {
+MainScreen::~MainScreen() {
     shutdown();
     if (instance_ == this) {
         instance_ = nullptr;
     }
 }
 
-bool MainScreenController::initialize() {
+bool MainScreen::initialize() {
     if (initialized_) {
         return true;
     }
@@ -40,7 +40,7 @@ bool MainScreenController::initialize() {
     return true;
 }
 
-void MainScreenController::shutdown() {
+void MainScreen::shutdown() {
     if (!initialized_) {
         return;
     }
@@ -50,7 +50,7 @@ void MainScreenController::shutdown() {
     initialized_ = false;
 }
 
-void MainScreenController::enterMainState() {
+void MainScreen::enterMainState() {
     ESP_LOGI(TAG, "Entering main state");
     
     // Load the main screen
@@ -88,7 +88,7 @@ void MainScreenController::enterMainState() {
     currentResult_ = DictionaryResult();
 }
 
-void MainScreenController::onWordSubmitted(const String& word) {
+void MainScreen::onWordSubmitted(const String& word) {
     if (word.length() == 0) {
         return;
     }
@@ -98,6 +98,7 @@ void MainScreenController::onWordSubmitted(const String& word) {
     // Switch to result mode
     showResultMode();
     lv_label_set_text(ui_TxtWord, word.c_str());
+    lv_textarea_set_text(ui_InputWord, "");
     currentWord_ = word;
     
     // Look up the word
@@ -112,39 +113,39 @@ void MainScreenController::onWordSubmitted(const String& word) {
     }
 }
 
-void MainScreenController::onKeyPressed(char key) {
+void MainScreen::onKeyPressed(char key) {
     ESP_LOGD(TAG, "Key pressed: %c", key);
     showInputMode();
 }
 
-void MainScreenController::onPlayWordAudio() {
+void MainScreen::onPlayWordAudio() {
     if (currentWord_.length() > 0) {
         dictionaryService_.playAudio(currentWord_, "word");
     }
 }
 
-void MainScreenController::onPlayExplanationAudio() {
+void MainScreen::onPlayExplanationAudio() {
     if (currentWord_.length() > 0) {
         dictionaryService_.playAudio(currentWord_, "explanation");
     }
 }
 
-void MainScreenController::onPlaySampleAudio() {
+void MainScreen::onPlaySampleAudio() {
     if (currentWord_.length() > 0) {
         dictionaryService_.playAudio(currentWord_, "sample");
     }
 }
 
-void MainScreenController::updateUI() {
+void MainScreen::updateUI() {
     // Update UI based on current state
     // This can be called periodically to refresh the display
 }
 
-String MainScreenController::getCurrentWord() const {
+String MainScreen::getCurrentWord() const {
     return currentWord_;
 }
 
-void MainScreenController::setupEventSubscriptions() {
+void MainScreen::setupEventSubscriptions() {
     // Subscribe to function key events
     services_.keyProcessor().onFunctionKeyEvent(
         [this](const FunctionKeyEvent& event) {
@@ -153,7 +154,7 @@ void MainScreenController::setupEventSubscriptions() {
     );
 }
 
-void MainScreenController::onFunctionKeyEvent(const FunctionKeyEvent& event) {
+void MainScreen::onFunctionKeyEvent(const FunctionKeyEvent& event) {
     // Only handle audio events in main state
     if (services_.isSystemReady()) {
         switch (event.type) {
@@ -172,18 +173,18 @@ void MainScreenController::onFunctionKeyEvent(const FunctionKeyEvent& event) {
     }
 }
 
-void MainScreenController::showInputMode() {
+void MainScreen::showInputMode() {
     lv_obj_remove_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_TxtWord, LV_OBJ_FLAG_HIDDEN);
     lv_group_focus_obj(ui_InputWord);
 }
 
-void MainScreenController::showResultMode() {
+void MainScreen::showResultMode() {
     lv_obj_add_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN);
     lv_obj_remove_flag(ui_TxtWord, LV_OBJ_FLAG_HIDDEN);
 }
 
-void MainScreenController::clearResults() {
+void MainScreen::clearResults() {
     lv_label_set_text(ui_TxtWord, "");
     lv_label_set_text(ui_TxtExplanation, "");
     lv_label_set_text(ui_TxtSampleSentence, "");
@@ -193,7 +194,7 @@ void MainScreenController::clearResults() {
 
 
 // Static callback implementations
-void MainScreenController::submitFormCallback() {
+void MainScreen::submitFormCallback() {
     if (instance_) {
         String word = lv_textarea_get_text(ui_InputWord);
         instance_->onWordSubmitted(word);
@@ -201,7 +202,7 @@ void MainScreenController::submitFormCallback() {
     }
 }
 
-void MainScreenController::keyInCallback(char key) {
+void MainScreen::keyInCallback(char key) {
     if (instance_) {
         instance_->onKeyPressed(key);
     }

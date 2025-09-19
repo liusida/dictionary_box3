@@ -4,41 +4,46 @@ static const char *TAG = "BLE";
 
 // Client callbacks implementation
 class BLEKeyboard::ClientCallbacks : public NimBLEClientCallbacks {
-public:
-    BLEKeyboard* keyboard;
-    
-    ClientCallbacks(BLEKeyboard* kb) : keyboard(kb) {}
-    
-    void onConnect(NimBLEClient *pClient) override { 
-        ESP_LOGI(TAG, "Connected"); 
-    }
+  public:
+    BLEKeyboard *keyboard;
+
+    ClientCallbacks(BLEKeyboard *kb) : keyboard(kb) {}
+
+    void onConnect(NimBLEClient *pClient) override { ESP_LOGI(TAG, "Connected"); }
 
     void onDisconnect(NimBLEClient *pClient, int reason) override {
-        ESP_LOGW(TAG, "%s Disconnected, reason = %d - Starting scan", 
-                     pClient->getPeerAddress().toString().c_str(), reason);
+        ESP_LOGW(TAG, "%s Disconnected, reason = %d - Starting scan", pClient->getPeerAddress().toString().c_str(), reason);
+
+        keyboard->advDevice = nullptr;
+        keyboard->toKeyboardSettings = true;
         keyboard->pScan->start(keyboard->scanTimeMs, false, true);
     }
 };
 
 // Scan callbacks implementation
 class BLEKeyboard::ScanCallbacks : public NimBLEScanCallbacks {
-public:
-    BLEKeyboard* keyboard;
-    
-    ScanCallbacks(BLEKeyboard* kb) : keyboard(kb) {}
-    
+  public:
+    BLEKeyboard *keyboard;
+
+    ScanCallbacks(BLEKeyboard *kb) : keyboard(kb) {}
+
     void onResult(const NimBLEAdvertisedDevice *advertisedDevice) override {
         bool found = false;
         // Print only name (if exists) and address
         String deviceName = advertisedDevice->getName().c_str();
         String deviceAddr = advertisedDevice->getAddress().toString().c_str();
-        
+
+        // Add all discovered devices to the list for UI
         if (deviceName.length() > 0) {
             ESP_LOGD(TAG, "Found Device: %s (%s)", deviceName.c_str(), deviceAddr.c_str());
+            // Add to discovered devices list (name, address)
+            keyboard->discoveredDevices.push_back(std::make_pair(deviceName, deviceAddr));
         } else {
             ESP_LOGD(TAG, "Found Device: %s", deviceAddr.c_str());
+            // Use address as name if no name available
+            keyboard->discoveredDevices.push_back(std::make_pair(deviceAddr, deviceAddr));
         }
-        
+
         if (keyboard->preferences.getString("addr").equals(String(advertisedDevice->getAddress().toString().c_str()))) {
             found = true;
         }
@@ -60,22 +65,25 @@ public:
     /** Callback to process the results of the completed scan or restart it */
     void onScanEnd(const NimBLEScanResults &results, int reason) override {
         ESP_LOGI(TAG, "Scan Ended, reason: %d, device count: %d; Restarting scan", reason, results.getCount());
-        delay(keyboard->scanRestartIntervalMs); // wait before starting scan again
-        keyboard->pScan->start(keyboard->scanTimeMs, false, true);
+        // delay(keyboard->scanRestartIntervalMs); // wait before starting scan again
+        // don't do auto re-scan
+        // keyboard->pScan->start(keyboard->scanTimeMs, false, true);
+        keyboard->toKeyboardSettings = true;
     }
 };
 
 // BLEKeyboard implementation
 
 // Static instance pointer for notifyCB access
-static BLEKeyboard* keyboardInstance = nullptr;
+static BLEKeyboard *keyboardInstance = nullptr;
 
-BLEKeyboard::BLEKeyboard() : advDevice(nullptr), doConnect(false), powerLevel(-15), scanTimeMs(500), 
-                            scanRestartIntervalMs(0), clientCallbacks(nullptr), scanCallbacks(nullptr), keyCallback(nullptr) {
+BLEKeyboard::BLEKeyboard()
+    : advDevice(nullptr), doConnect(false), powerLevel(-15), scanTimeMs(500), scanRestartIntervalMs(0), clientCallbacks(nullptr),
+      scanCallbacks(nullptr), keyCallback(nullptr), toKeyboardSettings(false) {
     // Initialize callback objects
     clientCallbacks = new ClientCallbacks(this);
     scanCallbacks = new ScanCallbacks(this);
-    
+
     // Set static instance pointer
     keyboardInstance = this;
 }
@@ -84,7 +92,7 @@ BLEKeyboard::~BLEKeyboard() {
     // Clean up callback objects
     delete clientCallbacks;
     delete scanCallbacks;
-    
+
     // Clear static instance pointer
     if (keyboardInstance == this) {
         keyboardInstance = nullptr;
@@ -101,6 +109,8 @@ void BLEKeyboard::shutdown() {
     if (pScan) {
         pScan->stop();
     }
+    // Close preferences
+    preferences.end();
 }
 
 void BLEKeyboard::tick() {
@@ -115,16 +125,21 @@ void BLEKeyboard::tick() {
             ESP_LOGW(TAG, "Failed to connect, no starting scan");
         }
     }
+    if (toKeyboardSettings) {
+        ESP_LOGI(TAG, "To keyboard settings, no starting scan");
+        toKeyboardSettings = false;
+        // Trigger keyboard settings state transition
+        // This will be handled by the app state machine detecting BLE disconnection
+    }
 }
 
-bool BLEKeyboard::isReady() const {
-    return isConnected();
-}
+bool BLEKeyboard::isReady() const { return isConnected(); }
 
 void BLEKeyboard::begin(uint32_t scanRestartIntervalMs) {
     // Store the scan restart interval
     this->scanRestartIntervalMs = scanRestartIntervalMs;
-    // Initialize Preferences to access NVS (Non-Volatile Storage)
+    // Initialize Preferences to access NVS (Non-Volatile Storage) - close first if already open
+    preferences.end();
     if (!preferences.begin("ble_config", false)) {
         ESP_LOGE(TAG, "Failed to open preferences");
     } else {
@@ -172,14 +187,15 @@ void BLEKeyboard::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, ui
     // str += ", Handle = " + std::to_string(pRemoteCharacteristic->getHandle());
     // str += ", Value = " + std::string((char *)pData, length);
     // Serial.printf("%s\n", str.c_str());
-    
+
     // Parse BLE keyboard data and call callback if set
     if (length >= 3) {
         // BLE keyboard reports: [modifiers, reserved, key1, key2, key3, key4, key5, key6]
-        ESP_LOGD("keypress", "BLE keyboard report: %d, %d, %d, %d, %d, %d, %d, %d", pData[0], pData[1], pData[2], pData[3], pData[4], pData[5], pData[6], pData[7]);
+        ESP_LOGD("keypress", "BLE keyboard report: %d, %d, %d, %d, %d, %d, %d, %d", pData[0], pData[1], pData[2], pData[3], pData[4], pData[5],
+                 pData[6], pData[7]);
         uint8_t modifiers = pData[0];
         uint8_t key1 = pData[2];
-        
+
         if (key1 != 0x00) { // Key pressed
             if (keyboardInstance && keyboardInstance->keyCallback) {
                 char key1_char = keyboardInstance->convertKeyCodeToChar(key1, modifiers);
@@ -281,73 +297,170 @@ bool BLEKeyboard::connectToServer() {
 char BLEKeyboard::convertKeyCodeToChar(uint8_t keyCode, uint8_t modifiers) {
     bool shift = (modifiers & 0x02) != 0; // Left shift
     bool caps = (modifiers & 0x02) != 0;  // Caps lock
-    
+
     switch (keyCode) {
-        case 0x04: return shift ? 'A' : 'a'; // A
-        case 0x05: return shift ? 'B' : 'b'; // B
-        case 0x06: return shift ? 'C' : 'c'; // C
-        case 0x07: return shift ? 'D' : 'd'; // D
-        case 0x08: return shift ? 'E' : 'e'; // E
-        case 0x09: return shift ? 'F' : 'f'; // F
-        case 0x0A: return shift ? 'G' : 'g'; // G
-        case 0x0B: return shift ? 'H' : 'h'; // H
-        case 0x0C: return shift ? 'I' : 'i'; // I
-        case 0x0D: return shift ? 'J' : 'j'; // J
-        case 0x0E: return shift ? 'K' : 'k'; // K
-        case 0x0F: return shift ? 'L' : 'l'; // L
-        case 0x10: return shift ? 'M' : 'm'; // M
-        case 0x11: return shift ? 'N' : 'n'; // N
-        case 0x12: return shift ? 'O' : 'o'; // O
-        case 0x13: return shift ? 'P' : 'p'; // P
-        case 0x14: return shift ? 'Q' : 'q'; // Q
-        case 0x15: return shift ? 'R' : 'r'; // R
-        case 0x16: return shift ? 'S' : 's'; // S
-        case 0x17: return shift ? 'T' : 't'; // T
-        case 0x18: return shift ? 'U' : 'u'; // U
-        case 0x19: return shift ? 'V' : 'v'; // V
-        case 0x1A: return shift ? 'W' : 'w'; // W
-        case 0x1B: return shift ? 'X' : 'x'; // X
-        case 0x1C: return shift ? 'Y' : 'y'; // Y
-        case 0x1D: return shift ? 'Z' : 'z'; // Z
-        case 0x1E: return shift ? '!' : '1'; // 1
-        case 0x1F: return shift ? '@' : '2'; // 2
-        case 0x20: return shift ? '#' : '3'; // 3
-        case 0x21: return shift ? '$' : '4'; // 4
-        case 0x22: return shift ? '%' : '5'; // 5
-        case 0x23: return shift ? '^' : '6'; // 6
-        case 0x24: return shift ? '&' : '7'; // 7
-        case 0x25: return shift ? '*' : '8'; // 8
-        case 0x26: return shift ? '(' : '9'; // 9
-        case 0x27: return shift ? ')' : '0'; // 0
-        case 0x28: return '\n'; // Enter
-        case 0x29: return 0x08; // Escape
-        case 0x2A: return 0x08; // Backspace
-        case 0x2B: return '\t'; // Tab
-        case 0x2C: return ' ';  // Space
-        case 0x2D: return shift ? '_' : '-'; // -
-        case 0x2E: return shift ? '+' : '='; // =
-        case 0x2F: return shift ? '{' : '['; // [
-        case 0x30: return shift ? '}' : ']'; // ]
-        case 0x31: return shift ? '|' : '\\'; // \
+    case 0x04:
+        return shift ? 'A' : 'a'; // A
+    case 0x05:
+        return shift ? 'B' : 'b'; // B
+    case 0x06:
+        return shift ? 'C' : 'c'; // C
+    case 0x07:
+        return shift ? 'D' : 'd'; // D
+    case 0x08:
+        return shift ? 'E' : 'e'; // E
+    case 0x09:
+        return shift ? 'F' : 'f'; // F
+    case 0x0A:
+        return shift ? 'G' : 'g'; // G
+    case 0x0B:
+        return shift ? 'H' : 'h'; // H
+    case 0x0C:
+        return shift ? 'I' : 'i'; // I
+    case 0x0D:
+        return shift ? 'J' : 'j'; // J
+    case 0x0E:
+        return shift ? 'K' : 'k'; // K
+    case 0x0F:
+        return shift ? 'L' : 'l'; // L
+    case 0x10:
+        return shift ? 'M' : 'm'; // M
+    case 0x11:
+        return shift ? 'N' : 'n'; // N
+    case 0x12:
+        return shift ? 'O' : 'o'; // O
+    case 0x13:
+        return shift ? 'P' : 'p'; // P
+    case 0x14:
+        return shift ? 'Q' : 'q'; // Q
+    case 0x15:
+        return shift ? 'R' : 'r'; // R
+    case 0x16:
+        return shift ? 'S' : 's'; // S
+    case 0x17:
+        return shift ? 'T' : 't'; // T
+    case 0x18:
+        return shift ? 'U' : 'u'; // U
+    case 0x19:
+        return shift ? 'V' : 'v'; // V
+    case 0x1A:
+        return shift ? 'W' : 'w'; // W
+    case 0x1B:
+        return shift ? 'X' : 'x'; // X
+    case 0x1C:
+        return shift ? 'Y' : 'y'; // Y
+    case 0x1D:
+        return shift ? 'Z' : 'z'; // Z
+    case 0x1E:
+        return shift ? '!' : '1'; // 1
+    case 0x1F:
+        return shift ? '@' : '2'; // 2
+    case 0x20:
+        return shift ? '#' : '3'; // 3
+    case 0x21:
+        return shift ? '$' : '4'; // 4
+    case 0x22:
+        return shift ? '%' : '5'; // 5
+    case 0x23:
+        return shift ? '^' : '6'; // 6
+    case 0x24:
+        return shift ? '&' : '7'; // 7
+    case 0x25:
+        return shift ? '*' : '8'; // 8
+    case 0x26:
+        return shift ? '(' : '9'; // 9
+    case 0x27:
+        return shift ? ')' : '0'; // 0
+    case 0x28:
+        return '\n'; // Enter
+    case 0x29:
+        return 0x08; // Escape
+    case 0x2A:
+        return 0x08; // Backspace
+    case 0x2B:
+        return '\t'; // Tab
+    case 0x2C:
+        return ' '; // Space
+    case 0x2D:
+        return shift ? '_' : '-'; // -
+    case 0x2E:
+        return shift ? '+' : '='; // =
+    case 0x2F:
+        return shift ? '{' : '['; // [
+    case 0x30:
+        return shift ? '}' : ']'; // ]
+    case 0x31:
+        return shift ? '|' : '\\'; // \
         case 0x32: return shift ? '~' : '`'; // `
-        case 0x33: return shift ? ':' : ';'; // ;
-        case 0x34: return shift ? '"' : '\''; // '
-        case 0x35: return shift ? '~' : '`'; // `
-        case 0x36: return shift ? '<' : ','; // ,
-        case 0x37: return shift ? '>' : '.'; // .
-        case 0x38: return shift ? '?' : '/'; // /
-        default: return 0; // Unknown key
+    case 0x33:
+        return shift ? ':' : ';'; // ;
+    case 0x34:
+        return shift ? '"' : '\''; // '
+    case 0x35:
+        return shift ? '~' : '`'; // `
+    case 0x36:
+        return shift ? '<' : ','; // ,
+    case 0x37:
+        return shift ? '>' : '.'; // .
+    case 0x38:
+        return shift ? '?' : '/'; // /
+    default:
+        return 0; // Unknown key
     }
 }
 
 bool BLEKeyboard::isConnected() const {
     // Check if we have a connected client for our advertised device
     if (advDevice) {
-        NimBLEClient* pClient = NimBLEDevice::getClientByPeerAddress(advDevice->getAddress());
+        NimBLEClient *pClient = NimBLEDevice::getClientByPeerAddress(advDevice->getAddress());
         if (pClient && pClient->isConnected()) {
             return true;
         }
     }
+
+    return false;
+}
+
+void BLEKeyboard::startScan() {
+    ESP_LOGI(TAG, "Starting BLE scan...");
     
+    // Clear previous scan results
+    discoveredDevices.clear();
+    
+    if (pScan) {
+        pScan->start(scanTimeMs, false, true);
+    } else {
+        ESP_LOGE(TAG, "Scan object not initialized");
+    }
+}
+
+std::vector<String> BLEKeyboard::getDiscoveredDevices() {
+    std::vector<String> deviceNames;
+    for (const auto& device : discoveredDevices) {
+        deviceNames.push_back(device.first); // device name
+    }
+    return deviceNames;
+}
+
+bool BLEKeyboard::connectToDevice(const String& deviceName) {
+    ESP_LOGI(TAG, "Attempting to connect to device: %s", deviceName.c_str());
+    
+    // Find the device in our discovered devices list
+    for (const auto& device : discoveredDevices) {
+        if (device.first == deviceName) {
+            ESP_LOGI(TAG, "Found device %s with address %s", device.first.c_str(), device.second.c_str());
+            
+            // Save the address for connection
+            preferences.putString("addr", device.second);
+            
+            // Set up for connection
+            doConnect = true;
+            advDevice = nullptr; // Will be set when we find the device again
+            
+            return true;
+        }
+    }
+    
+    ESP_LOGW(TAG, "Device %s not found in discovered devices", deviceName.c_str());
     return false;
 }

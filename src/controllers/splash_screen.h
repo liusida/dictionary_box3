@@ -4,14 +4,14 @@
 #include <Arduino.h>
 
 /**
- * @brief Controller for the Splash screen
+ * @brief Splash screen manager
  * 
  * Handles splash screen logic and transitions to main screen
  */
-class SplashController {
+class SplashScreen {
 public:
-    SplashController();
-    ~SplashController();
+    SplashScreen();
+    ~SplashScreen();
     
     bool initialize();
     void shutdown();

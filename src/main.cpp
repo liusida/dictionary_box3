@@ -1,14 +1,15 @@
 #include <Arduino.h>
 
 #include "core/services.h"
-#include "controllers/app_controller.h"
+#include "controllers/app.h"
+#include "input/key_processor.h"
 #include "drivers/ble_keyboard.h"
 #include "ui/ui.h"
 #include "core/log.h"
 static const char *TAG = "App";
 
-// Application controller
-AppController appController;
+// Application instance
+App app;
 
 
 void setup() {
@@ -20,9 +21,9 @@ void setup() {
         return;
     }
 
-    // Initialize application controller
-    if (!appController.initialize()) {
-        ESP_LOGE(TAG, "Failed to initialize application controller");
+    // Initialize application
+    if (!app.initialize()) {
+        ESP_LOGE(TAG, "Failed to initialize application");
         return;
     }
 
@@ -30,7 +31,7 @@ void setup() {
     ui_init();
     
     // Start in splash state
-    appController.enterSplashState();
+    app.enterSplashState();
 
     // Set up BLE keyboard callback to use the new KeyProcessor
     Services::instance().bleKeyboard().setKeyCallback([](char key, uint8_t keyCode, uint8_t modifiers) {
@@ -39,8 +40,8 @@ void setup() {
 }
 
 void loop() {
-    // Use the new application controller
-    appController.tick();
+    // Use the application
+    app.tick();
 
     delay(5); // Small delay for LVGL
 }

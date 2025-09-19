@@ -1,18 +1,20 @@
 #pragma once
 #include "core/services.h"
-#include "controllers/main_screen_controller.h"
+#include "controllers/main_screen.h"
+#include "controllers/wifi_settings_screen.h"
+#include "controllers/keyboard_settings_screen.h"
 #include "main.h"
 
 /**
- * @brief Main application controller
+ * @brief Main application coordinator
  * 
  * Manages the overall application state and coordinates between
- * different controllers and services.
+ * different screen managers and services.
  */
-class AppController {
+class App {
 public:
-    AppController();
-    ~AppController();
+    App();
+    ~App();
     
     /**
      * @brief Initialize the application
@@ -39,6 +41,8 @@ public:
      * @brief Enter main state
      */
     void enterMainState();
+    void enterWiFiSettingsState();
+    void enterKeyboardSettingsState();
     
     /**
      * @brief Check if system is ready
@@ -54,7 +58,9 @@ public:
     
 private:
     Services& services_;
-    MainScreenController mainScreenController_;
+    MainScreen mainScreen_;
+    WiFiSettingsScreen wifiSettingsScreen_;
+    KeyboardSettingsScreen keyboardSettingsScreen_;
     AppState currentState_;
     bool stateTransitioned_;
     unsigned long lastStateCheck_;

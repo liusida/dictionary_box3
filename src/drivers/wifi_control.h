@@ -4,38 +4,26 @@
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <Preferences.h>
-#include "lvgl.h"
+#include <vector>
 #include "core/driver_interface.h"
 
 /**
  * WiFiControl Class
  * 
- * This class handles WiFi connection with automatic fallback to UI configuration.
+ * This class handles WiFi connection and credential management.
+ * UI operations are handled by WiFiSettingsController.
  * 
  * Usage:
  * 1. Create a WiFiControl instance: WiFiControl wifi;
- * 2. Call wifi.begin() - this will:
- *    - First try to connect using saved credentials from NVS flash
- *    - If that fails, show the WiFi settings UI for manual configuration
- *    - Save successful credentials for future use
- * 3. Call wifi.tick() in your main loop for automatic disconnection handling
+ * 2. Call wifi.begin() - this will try to connect using saved credentials
+ * 3. Call wifi.tick() in your main loop for connection monitoring
+ * 4. Use wifi.connectToNetwork() for manual connections
  * 
  * Features:
  * - Automatic credential storage in NVS flash
- * - Network scanning and dropdown population
- * - Connection status monitoring with automatic reconnection
- * - Automatic WiFi settings UI popup on disconnection (after 10 seconds)
- * - Button state management (disabled during connection, re-enabled on failure)
+ * - Connection status monitoring
  * - Simple API: wifi.begin(), wifi.tick(), wifi.isConnected(), wifi.getIP()
  */
-
-// Forward declarations for UI elements
-extern "C" {
-    extern lv_obj_t * ui_WIFI_Settings;
-    extern lv_obj_t * ui_InputSSIDs;
-    extern lv_obj_t * ui_InputPassword;
-    extern lv_obj_t * ui_BtnConnect;
-}
 
 class WiFiControl : public DriverInterface {
 public:
@@ -60,32 +48,7 @@ public:
     // Get IP address
     IPAddress getIP();
     
-    // Manually trigger WiFi settings UI (useful for user-initiated WiFi setup)
-    void showSettingsUI();
-
-private:
-    Preferences preferences;
-    bool uiInitialized;
-    bool wifiConnected;
-    unsigned long lastConnectionCheck;
-    unsigned long lastDisconnectionTime;
-    bool wasConnected;
-    NetworkClientSecure client;
-    HTTPClient https;
-
-    // Try to connect using saved credentials
-    bool connectWithSavedCredentials();
-    
-    // Show WiFi settings UI and handle user input
-    bool showWiFiSettingsUI();
-    
-    // Close WiFi settings UI and return to main screen
-    void closeWiFiSettingsUI();
-    
-    // Scan for available networks and populate dropdown
-    void scanAndPopulateNetworks();
-    
-    // Connect to selected network
+    // Connect to a specific network (called by controller)
     bool connectToNetwork(const String& ssid, const String& password);
     
     // Save credentials to NVS
@@ -97,14 +60,21 @@ private:
     // Clear saved credentials
     void clearCredentials();
     
-    // Reset connect button to default state
-    void resetConnectButton();
+    // Scan for available networks (returns list of SSIDs)
+    std::vector<String> scanNetworks();
     
-    // Static callback for connect button
-    static void connectButtonCallback(lv_event_t * e);
-    
-    // Instance pointer for static callback
-    static WiFiControl* instance;
-
+    // HTTP POST method
     void POST(const String& url, const String& body);
+
+private:
+    Preferences preferences;
+    bool wifiConnected;
+    unsigned long lastConnectionCheck;
+    unsigned long lastDisconnectionTime;
+    bool wasConnected;
+    NetworkClientSecure client;
+    HTTPClient https;
+
+    // Try to connect using saved credentials
+    bool connectWithSavedCredentials();
 };

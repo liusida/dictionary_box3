@@ -114,4 +114,29 @@ class BLEKeyboard : public DriverInterface {
      * @return true if connected, false otherwise
      */
     bool isConnected() const;
+    
+    /**
+     * Start scanning for BLE devices
+     */
+    void startScan();
+    
+    /**
+     * Get list of discovered devices
+     * @return Vector of device names
+     */
+    std::vector<String> getDiscoveredDevices();
+    
+    /**
+     * Connect to a specific device by name
+     * @param deviceName Name of the device to connect to
+     * @return true if connection initiated successfully
+     */
+    bool connectToDevice(const String& deviceName);
+
+  protected:
+    // Flag to trigger keyboard settings state transition
+    bool toKeyboardSettings;
+    
+    // Container for discovered devices (name -> address mapping)
+    std::vector<std::pair<String, String>> discoveredDevices;
 };
