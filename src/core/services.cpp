@@ -30,7 +30,7 @@ bool Services::initialize() {
     // Initialize services
     bool success = true;
     
-    if (!audioManager_->begin()) {
+    if (!audioManager_->initialize()) {
         ESP_LOGE(TAG, "Failed to initialize audio manager");
         success = false;
     }
@@ -79,7 +79,7 @@ void Services::shutdown() {
     }
     
     if (audioManager_) {
-        audioManager_->end();
+        audioManager_->shutdown();
     }
     
     // Clear all instances

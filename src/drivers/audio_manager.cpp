@@ -15,7 +15,7 @@ AudioManager::AudioManager()
       playbackCompleteCountThreshold(5000) {}  // Increased to 5 seconds for longer content
 
 AudioManager::~AudioManager() {
-    end();
+    shutdown();
     if (url) {
         delete url;
         url = nullptr;

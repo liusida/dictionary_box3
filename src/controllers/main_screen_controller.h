@@ -3,7 +3,6 @@
 #include "services/dictionary_service.h"
 #include "core/event_system.h"
 #include "input/key_processor.h"
-#include "main.h"
 #include "lvgl.h"
 
 // Forward declarations for UI elements

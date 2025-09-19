@@ -71,9 +71,6 @@ public:
     void tick() override;
     bool isReady() const override;
     
-    // Legacy methods for compatibility
-    bool begin() { return initialize(); }
-    void end() { shutdown(); }
     
     // Audio playback methods
     bool play(const char* url);
