@@ -5,7 +5,7 @@
 #include "drivers/display_manager.h"
 #include "drivers/ble_keyboard.h"
 #include "drivers/wifi_control.h"
-#include "esp_log.h"
+#include "core/log.h"
 
 static const char *TAG = "AppController";
 

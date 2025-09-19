@@ -1,7 +1,7 @@
 #include "main_screen_controller.h"
 #include "drivers/lvgl_drive.h"
 #include "ui/ui.h"
-#include "esp_log.h"
+#include "core/log.h"
 #include "lvgl.h"
 
 static const char *TAG = "MainScreenController";
@@ -131,7 +131,7 @@ void MainScreenController::onPlayExplanationAudio() {
 
 void MainScreenController::onPlaySampleAudio() {
     if (currentWord_.length() > 0) {
-        dictionaryService_.playAudio(currentWord_, "sample_sentence");
+        dictionaryService_.playAudio(currentWord_, "sample");
     }
 }
 

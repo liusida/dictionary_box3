@@ -4,7 +4,7 @@
 #include "drivers/wifi_control.h"
 #include "drivers/display_manager.h"
 #include "input/key_processor.h"
-#include "esp_log.h"
+#include "core/log.h"
 
 static const char *TAG = "Services";
 

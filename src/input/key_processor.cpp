@@ -2,7 +2,7 @@
 #include "core/services.h"
 #include "drivers/audio_manager.h"
 #include "utils.h"
-#include "esp_log.h"
+#include "core/log.h"
 #include "lvgl.h"
 
 static const char *TAG = "KeyProcessor";

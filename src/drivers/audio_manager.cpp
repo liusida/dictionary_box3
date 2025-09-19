@@ -1,9 +1,9 @@
 // Enable Helix logging at Debug level
-// #define HELIX_LOG_LEVEL LogLevelHelix::Debug
+#define HELIX_LOG_LEVEL LogLevelHelix::Debug
 
 #include "audio_manager.h"
 #include "core/event_publisher.h"
-#include "esp_log.h"
+#include "core/log.h"
 
 static const char *TAG = "AudioManager";
 // Route allocations > 256 bytes to PSRAM if available
@@ -12,7 +12,7 @@ static MemoryManager s_audioMem(256);
 AudioManager::AudioManager()
     : board(AudioDriverES8311, NoPins), out(board), info(32000, 2, 16), url(nullptr), mp3(), decoded(out, mp3), copier(nullptr),
       audioTaskHandle(nullptr), isInitialized(false), isPlaying(false), currentUrl(""), 
-      playbackCompleteCountThreshold(5000) {}  // Increased to 5 seconds for longer content
+      playbackCompleteCountThreshold(10) {}
 
 AudioManager::~AudioManager() {
     shutdown();
@@ -27,12 +27,13 @@ AudioManager::~AudioManager() {
 }
 
 bool AudioManager::initialize() {
+    ESP_LOGI(TAG, "=== AudioManager::initialize() called ===");
     if (isInitialized) {
+        ESP_LOGI(TAG, "AudioManager already initialized, returning true");
         return true;
     }
-
-    // AudioToolsLogger.begin(Serial, AudioToolsLogLevel::Debug);
-    // AudioDriverLogger.begin(Serial, AudioDriverLogLevel::Debug);
+    
+    // copier->setDelayOnNoData(500);
 
     ESP_LOGI(TAG, "Initializing audio pins...");
     DriverPins pins;
@@ -98,14 +99,23 @@ bool AudioManager::play(const char *urlStr) {
 
     currentUrl = String(urlStr);
 
-    ESP_LOGI(TAG, "Opening URL stream...");
+    ESP_LOGI(TAG, "Opening URL stream: %s", urlStr);
     url->setTimeout(3000);
+    url->httpRequest().header().setProtocol("HTTP/1.0");
+    url->setConnectionClose(true);    
     ESP_LOGD(TAG, "URL begin start");
     if (!url->begin(urlStr, "audio/mpeg")) {
-        ESP_LOGE(TAG, "URL open failed");
+        ESP_LOGE(TAG, "URL open failed for: %s", urlStr);
         return false;
     }
-    ESP_LOGD(TAG, "URL begin ok");
+    ESP_LOGD(TAG, "URL begin ok - checking connection status");
+    
+    // Check if we can read from the URL
+    if (url->available() == 0) {
+        ESP_LOGW(TAG, "URL stream has no data available immediately");
+    } else {
+        ESP_LOGI(TAG, "URL stream has %d bytes available", url->available());
+    }
 
     // Try to strip ID3 header only if enough data is available to avoid blocking
     fixRemoveID3Info(*url);
@@ -202,46 +212,38 @@ void AudioManager::audioTask(void *parameter) {
 }
 
 void AudioManager::processAudio() {
+    static uint32_t downloadedBytes = 0;
+    static bool isCompleted = false;
     for(;;) {
         // Check if we should be playing audio
         if (isPlaying && url && copier) {
+            // Check URL stream health before copying
+            if (url->available() == 0 && !*url) {
+                ESP_LOGW(TAG, "URL stream disconnected - stopping playback");
+                stop();
+                continue;
+            }
+            
             size_t bytesCopied = copier->copy();
-            
-            // Use a single static counter across both branches
-            static uint32_t zeroBytesStart = 0;
-            
+            downloadedBytes += bytesCopied;
+
             // If no bytes copied, check if we should stop
             if (bytesCopied == 0) {
-                zeroBytesStart++;
-                
-                // Only stop if we've had no data for a long time AND URL is empty
-                if (zeroBytesStart > playbackCompleteCountThreshold) {
-                    // Check if URL is also empty and has been empty for a while
-                    if (url && url->available() == 0) {
-                        // Additional check: see if the HTTP connection is still active
-                        // This helps distinguish between buffering and actual end-of-stream
-                        if (zeroBytesStart > playbackCompleteCountThreshold + 2000) {  // Extra 2 seconds
-                            ESP_LOGI(TAG, "Playback completed - no data copied and URL empty for %d iterations", zeroBytesStart);
-                            stop();
-                            zeroBytesStart = 0;
-                            continue;
-                        } else {
-                            ESP_LOGD(TAG, "URL empty but waiting longer to confirm end-of-stream (%d/%d)", 
-                                    zeroBytesStart, playbackCompleteCountThreshold + 2000);
-                        }
-                    } else {
-                        // URL still has data, but we're not copying - might be buffering
-                        ESP_LOGD(TAG, "No data copied but URL has %d bytes available (buffering?)", url ? url->available() : 0);
-                    }
+                if (isCompleted) {
+                    ESP_LOGI(TAG, "Download completed, %d bytes, but let's try not to stop the audio here.", downloadedBytes);
+                    stop();
+                    isCompleted = true;
                 }
+                continue;
             } else {
                 // Reset the zero-bytes counter when we copy data
-                zeroBytesStart = 0;
+                isCompleted = false;
             }
             
             vTaskDelay(1);
         } else {
             // If not playing, wait a bit before checking again
+            downloadedBytes = 0;
             vTaskDelay(100);
         }
     }

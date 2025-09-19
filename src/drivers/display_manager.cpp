@@ -1,7 +1,7 @@
 #include "display_manager.h"
 #include "lvgl_drive.h"
 #include "utils.h"
-#include "esp_log.h"
+#include "core/log.h"
 
 static const char *TAG = "DisplayManager";
 

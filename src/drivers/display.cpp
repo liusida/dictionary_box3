@@ -1,5 +1,5 @@
 #include "display.h"
-#include "esp_log.h"
+#include "core/log.h"
 static const char *TAG = "Display";
 
 // LVGL callback functions for LVGL 9.x

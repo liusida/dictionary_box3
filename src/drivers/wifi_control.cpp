@@ -6,7 +6,7 @@
 #include <ArduinoJson.h>
 #include <vector>
 #include <time.h>
-#include "esp_log.h"
+#include "core/log.h"
 static const char *TAG = "WiFi";
 
 // point to the file specified in platformio.ini

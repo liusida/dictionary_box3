@@ -1,5 +1,5 @@
 #include "event_publisher.h"
-#include "esp_log.h"
+#include "core/log.h"
 
 static const char *TAG = "EventPublisher";
 

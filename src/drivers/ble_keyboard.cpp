@@ -1,5 +1,5 @@
 #include "ble_keyboard.h"
-#include "esp_log.h"
+#include "core/log.h"
 static const char *TAG = "BLE";
 
 // Client callbacks implementation

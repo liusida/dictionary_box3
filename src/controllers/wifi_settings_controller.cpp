@@ -1,6 +1,6 @@
 #include "wifi_settings_controller.h"
 #include "drivers/lvgl_drive.h"
-#include "esp_log.h"
+#include "core/log.h"
 
 static const char* TAG = "WiFiSettingsController";
 

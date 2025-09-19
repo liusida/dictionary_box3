@@ -6,7 +6,7 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
-#include "esp_log.h"
+#include "core/log.h"
 
 static const char *TAG = "DictionaryService";
 

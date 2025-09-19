@@ -4,7 +4,7 @@
 #include "controllers/app_controller.h"
 #include "drivers/ble_keyboard.h"
 #include "ui/ui.h"
-#include "esp_log.h"
+#include "core/log.h"
 static const char *TAG = "App";
 
 // Application controller
@@ -13,9 +13,6 @@ AppController appController;
 
 void setup() {
     Serial.begin(115200);
-
-    // Show INFO and above, hide DEBUG/VERBOSE
-    esp_log_level_set("*", ESP_LOG_INFO);
 
     // Initialize all services
     if (!Services::instance().initialize()) {
