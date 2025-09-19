@@ -155,18 +155,16 @@ void BLEKeyboard::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, ui
     // Serial.printf("%s\n", str.c_str());
     
     // Parse BLE keyboard data and call callback if set
-    if (length > 0 && pData[0] == 0x00) { // Standard keyboard report
-        if (length >= 3) {
-            // BLE keyboard reports: [modifiers, reserved, key1, key2, key3, key4, key5, key6]
-            ESP_LOGD("keypress", "BLE keyboard report: %d, %d, %d, %d, %d, %d, %d, %d", pData[0], pData[1], pData[2], pData[3], pData[4], pData[5], pData[6], pData[7]);
-            uint8_t modifiers = pData[0];
-            uint8_t key1 = pData[2];
-            
-            if (key1 != 0x00) { // Key pressed
-                if (keyboardInstance && keyboardInstance->keyCallback) {
-                    char key1_char = keyboardInstance->convertKeyCodeToChar(key1, modifiers);
-                    keyboardInstance->keyCallback(key1_char, key1, modifiers);
-                }
+    if (length >= 3) {
+        // BLE keyboard reports: [modifiers, reserved, key1, key2, key3, key4, key5, key6]
+        ESP_LOGD("keypress", "BLE keyboard report: %d, %d, %d, %d, %d, %d, %d, %d", pData[0], pData[1], pData[2], pData[3], pData[4], pData[5], pData[6], pData[7]);
+        uint8_t modifiers = pData[0];
+        uint8_t key1 = pData[2];
+        
+        if (key1 != 0x00) { // Key pressed
+            if (keyboardInstance && keyboardInstance->keyCallback) {
+                char key1_char = keyboardInstance->convertKeyCodeToChar(key1, modifiers);
+                keyboardInstance->keyCallback(key1_char, key1, modifiers);
             }
         }
     }
