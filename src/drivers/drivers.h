@@ -9,8 +9,8 @@
 
 // Include all driver modules
 #include "display.h"
+#include "display_manager.h"
 #include "ble_keyboard.h"
-#include "key_processing.h"
 #include "lvgl_drive.h"
 #include "wifi_control.h"
 #include "audio_manager.h"

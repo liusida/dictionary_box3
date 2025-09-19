@@ -1,15 +1,16 @@
 #include "main_screen_control.h"
 #include "main.h"
-#include "drivers/drivers.h"
+#include "core/services.h"
+#include "input/key_processor.h"
+#include "drivers/wifi_control.h"
+#include "drivers/audio_manager.h"
+#include "drivers/lvgl_drive.h"
 #include "utils.h"
 #include <Arduino.h>
-#include <HTTPClient.h>
-#include <WiFi.h>
-#include <WiFiClientSecure.h>
-#include <ArduinoJson.h>
+#include "ArduinoJson.h"
+#include "WiFiClientSecure.h"
+#include "HTTPClient.h"
 #include "esp_log.h"
-
-extern AudioManager audio;
 
 static const char *TAG = "MainScreen";
 
@@ -61,7 +62,7 @@ void playAudioFromServer(const char* word, const char* audioType) {
   // Skip if word is empty or literal "null"
   if (word[0] == '\0') return;
   if (strcasecmp(word, "null") == 0) return;
-  if (WiFi.status() != WL_CONNECTED) {
+  if (!Services::instance().wifi().isConnected()) {
     ESP_LOGW(TAG, "WiFi not connected; skip audio");
     return;
   }
@@ -69,14 +70,14 @@ void playAudioFromServer(const char* word, const char* audioType) {
   if (encoded.length() == 0) return;
   String url = String(AUDIO_URL) + "?word=" + encoded + "&type=" + audioType;
   ESP_LOGD(TAG, "Playing audio from server: %s", url.c_str());
-  audio.play(url.c_str());
+  Services::instance().audio().play(url.c_str());
 }
 
 bool getExplanationFromServer(const char* word,
                               String& outWord,
                               String& outExplanation,
                               String& outSampleSentence) {
-  if (WiFi.status() != WL_CONNECTED) {
+  if (!Services::instance().wifi().isConnected()) {
     ESP_LOGW(TAG, "WiFi not connected");
     return false;
   }
@@ -189,7 +190,7 @@ void keyInMainScreen(char key) {
 }
 
 void enterMainState() {
-    ESP_LOGI(TAG, "Entering MAIN state");
+    ESP_LOGI(TAG, "Entering MAIN state (legacy)");
     currentState = STATE_MAIN;
     stateTransitioned = true;
     loadScreen(ui_Main);
@@ -204,6 +205,7 @@ void enterMainState() {
     lv_label_set_text(ui_TxtExplanation, "");
     lv_label_set_text(ui_TxtSampleSentence, "");
 
-    setSubmitCallback(submitFormMainScreen);
-    setKeyInCallback(keyInMainScreen);
+    // Set up callbacks using the new KeyProcessor
+    Services::instance().keyProcessor().setSubmitCallback(submitFormMainScreen);
+    Services::instance().keyProcessor().setKeyInCallback(keyInMainScreen);
 }

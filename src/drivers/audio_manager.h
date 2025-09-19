@@ -10,6 +10,7 @@
 #include "AudioTools/CoreAudio/AudioHttp/URLStream.h"
 #include "AudioTools/AudioCodecs/CodecMP3Helix.h"
 #include "AudioTools/AudioLibs/MemoryManager.h"
+#include "core/driver_interface.h"
 
 class EncodedAudioStreamPatch : public EncodedAudioStream {
 // we use this patch class to modify the protected enc_out. once the issue is resovled, we can remove this class.
@@ -30,7 +31,7 @@ public:
       }
 };
 
-class AudioManager {
+class AudioManager : public DriverInterface {
 private:
     // Audio board and output (ES8311)
     AudioBoard board;
@@ -64,9 +65,16 @@ public:
     AudioManager();
     ~AudioManager();
     
-    // Lifecycle methods
-    bool begin();
-    void end();
+    // DriverInterface implementation
+    bool initialize() override;
+    void shutdown() override;
+    void tick() override;
+    bool isReady() const override;
+    
+    // Legacy methods for compatibility
+    bool begin() { return initialize(); }
+    void end() { shutdown(); }
+    
     // Audio playback methods
     bool play(const char* url);
     bool stop();

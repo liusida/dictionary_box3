@@ -3,6 +3,7 @@
 #include "Preferences.h"
 #include <Arduino.h>
 #include <NimBLEDevice.h>
+#include "core/driver_interface.h"
 
 #define BLE_SERVICE_UUID "1812"        // Keyboard Service UUID
 #define BLE_CHARACTERISTIC_UUID "2a4d" // Actually, we subscribe to any characteristic that can notify...
@@ -18,7 +19,7 @@
  * - Automatically reconnects if the device is found again
  * - Keeps scanning if the device disconnects or cannot be found
  */
-class BLEKeyboard {
+class BLEKeyboard : public DriverInterface {
   private:
     const NimBLEAdvertisedDevice *advDevice;
     bool doConnect;
@@ -56,6 +57,12 @@ class BLEKeyboard {
      */
     ~BLEKeyboard();
 
+    // DriverInterface implementation
+    bool initialize() override;
+    void shutdown() override;
+    void tick() override;
+    bool isReady() const override;
+    
     /**
      * Initialize the BLE keyboard - call this in setup()
      *
@@ -70,15 +77,7 @@ class BLEKeyboard {
      */
     void begin(uint32_t scanRestartIntervalMs = 0);
 
-    /**
-     * Main loop function - call this in loop()
-     *
-     * This method handles:
-     * - Connection management
-     * - Automatic reconnection
-     * - Notification processing
-     */
-    void tick();
+    // tick() method is now implemented in DriverInterface
 
     /**
      * Get the current power level setting

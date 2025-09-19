@@ -5,6 +5,7 @@
 #include <WiFiClientSecure.h>
 #include <Preferences.h>
 #include "lvgl.h"
+#include "core/driver_interface.h"
 
 /**
  * WiFiControl Class
@@ -36,10 +37,16 @@ extern "C" {
     extern lv_obj_t * ui_BtnConnect;
 }
 
-class WiFiControl {
+class WiFiControl : public DriverInterface {
 public:
     WiFiControl();
     ~WiFiControl();
+    
+    // DriverInterface implementation
+    bool initialize() override;
+    void shutdown() override;
+    void tick() override;
+    bool isReady() const override;
     
     // Main entry point - tries saved credentials first, falls back to UI
     bool begin();
@@ -52,9 +59,6 @@ public:
     
     // Get IP address
     IPAddress getIP();
-    
-    // Periodic check - call this in main loop
-    void tick();
     
     // Manually trigger WiFi settings UI (useful for user-initiated WiFi setup)
     void showSettingsUI();

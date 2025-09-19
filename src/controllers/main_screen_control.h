@@ -4,18 +4,18 @@
 #include "ui/ui.h"
 #include <Arduino.h>
 
-// Main screen control functions
+// Main screen control functions (legacy compatibility)
 void enterMainState();
 void submitFormMainScreen();
 void keyInMainScreen(char key);
 
-// Audio read triggers
+// Audio read triggers (legacy compatibility)
 void readWord();
 void readExplanation();
 void readSampleSentence();
 void playAudioFromServer(const char* word, const char* audioType);
 
-// Fetch data from backend for a given word; returns true on success
+// Fetch data from backend for a given word; returns true on success (legacy compatibility)
 bool getExplanationFromServer(const char* word,
                               String& outWord,
                               String& outExplanation,

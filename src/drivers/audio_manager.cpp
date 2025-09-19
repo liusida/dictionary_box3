@@ -2,6 +2,7 @@
 // #define HELIX_LOG_LEVEL LogLevelHelix::Debug
 
 #include "audio_manager.h"
+#include "core/event_publisher.h"
 #include "esp_log.h"
 
 static const char *TAG = "AudioManager";
@@ -11,7 +12,7 @@ static MemoryManager s_audioMem(256);
 AudioManager::AudioManager()
     : board(AudioDriverES8311, NoPins), out(board), info(32000, 2, 16), url(nullptr), mp3(), decoded(out, mp3), copier(nullptr),
       audioTaskHandle(nullptr), isInitialized(false), isPlaying(false), currentUrl(""), 
-      playbackCompleteCountThreshold(1000) {}
+      playbackCompleteCountThreshold(5000) {}  // Increased to 5 seconds for longer content
 
 AudioManager::~AudioManager() {
     end();
@@ -25,7 +26,7 @@ AudioManager::~AudioManager() {
     }
 }
 
-bool AudioManager::begin() {
+bool AudioManager::initialize() {
     if (isInitialized) {
         return true;
     }
@@ -56,7 +57,7 @@ bool AudioManager::begin() {
     return true;
 }
 
-void AudioManager::end() {
+void AudioManager::shutdown() {
     if (!isInitialized) {
         return;
     }
@@ -72,6 +73,15 @@ void AudioManager::end() {
 
     isInitialized = false;
     ESP_LOGI(TAG, "Audio system ended");
+}
+
+void AudioManager::tick() {
+    // Audio processing is handled in the background task
+    // This method is here for future expansion
+}
+
+bool AudioManager::isReady() const {
+    return isInitialized;
 }
 
 bool AudioManager::play(const char *urlStr) {
@@ -111,6 +121,9 @@ bool AudioManager::play(const char *urlStr) {
 
     isPlaying = true;
     
+    // Publish audio event
+    EventPublisher::instance().publishAudioEvent(AudioEvent::PlaybackStarted, urlStr);
+    
     ESP_LOGI(TAG, "Audio playback started - isPlaying=%d", isPlaying);
     return true;
 }
@@ -137,6 +150,9 @@ bool AudioManager::stop() {
         // Reset audio configuration
         // out.setAudioInfo(info);
 
+        // Publish audio event
+        EventPublisher::instance().publishAudioEvent(AudioEvent::PlaybackStopped, currentUrl);
+        
         ESP_LOGI(TAG, "Audio playback stopped");
         return true;
     }
@@ -194,16 +210,28 @@ void AudioManager::processAudio() {
             // Use a single static counter across both branches
             static uint32_t zeroBytesStart = 0;
             
-            // If no bytes copied and URL has no data, check if we should stop
+            // If no bytes copied, check if we should stop
             if (bytesCopied == 0) {
                 zeroBytesStart++;
+                
+                // Only stop if we've had no data for a long time AND URL is empty
                 if (zeroBytesStart > playbackCompleteCountThreshold) {
-                    // Check if URL is also empty
+                    // Check if URL is also empty and has been empty for a while
                     if (url && url->available() == 0) {
-                        ESP_LOGI(TAG, "Playback completed - no data copied and URL empty");
-                        stop();
-                        zeroBytesStart = 0;
-                        continue;
+                        // Additional check: see if the HTTP connection is still active
+                        // This helps distinguish between buffering and actual end-of-stream
+                        if (zeroBytesStart > playbackCompleteCountThreshold + 2000) {  // Extra 2 seconds
+                            ESP_LOGI(TAG, "Playback completed - no data copied and URL empty for %d iterations", zeroBytesStart);
+                            stop();
+                            zeroBytesStart = 0;
+                            continue;
+                        } else {
+                            ESP_LOGD(TAG, "URL empty but waiting longer to confirm end-of-stream (%d/%d)", 
+                                    zeroBytesStart, playbackCompleteCountThreshold + 2000);
+                        }
+                    } else {
+                        // URL still has data, but we're not copying - might be buffering
+                        ESP_LOGD(TAG, "No data copied but URL has %d bytes available (buffering?)", url ? url->available() : 0);
                     }
                 }
             } else {

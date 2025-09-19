@@ -1,6 +1,7 @@
 #include "wifi_control.h"
 #include "ui/ui.h"
 #include "drivers/lvgl_drive.h"
+#include "core/event_publisher.h"
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <vector>
@@ -25,6 +26,20 @@ WiFiControl::~WiFiControl() {
     if (instance == this) {
         instance = nullptr;
     }
+}
+
+bool WiFiControl::initialize() {
+    return begin();
+}
+
+void WiFiControl::shutdown() {
+    // Disconnect WiFi
+    WiFi.disconnect();
+    ESP_LOGI(TAG, "WiFi control shutdown");
+}
+
+bool WiFiControl::isReady() const {
+    return const_cast<WiFiControl*>(this)->isConnected();
 }
 
 bool WiFiControl::begin() {
@@ -86,6 +101,9 @@ bool WiFiControl::connectWithSavedCredentials() {
     
     if (WiFi.status() == WL_CONNECTED) {
         ESP_LOGI(TAG, "Connected! IP address: %s", WiFi.localIP().toString().c_str());
+        
+        // Publish WiFi connected event
+        EventPublisher::instance().publishWiFiEvent(WiFiEvent::Connected, ssid, WiFi.localIP());
         
         // Set DNS for faster DNS resolution
         WiFi.setDNS(IPAddress(8, 8, 8, 8), IPAddress(114, 114, 114, 114));

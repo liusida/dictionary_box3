@@ -3,22 +3,22 @@
 #include "lvgl.h"
 #include <Arduino.h>
 
-#include "drivers/drivers.h"
+#include "core/services.h"
+#include "controllers/app_controller.h"
+#include "drivers/wifi_control.h"
+#include "drivers/ble_keyboard.h"
+#include "drivers/lvgl_drive.h"
 #include "ui/ui.h"
 #include "utils.h"
-#include "main_screen_control.h"
+#include "controllers/main_screen_control.h"
 #include "main.h"
 #include "esp_log.h"
 static const char *TAG = "App";
 
-// Global objects
-TFT_eSPI tft = TFT_eSPI();
-GT911 touch = GT911();
-BLEKeyboard bleKeyboard;
-WiFiControl wifi;
-AudioManager audio;
+// Application controller
+AppController appController;
 
-// State management
+// Legacy state variables for compatibility
 AppState currentState = STATE_SPLASH;
 bool stateTransitioned = false;
 unsigned long lastStateCheck = 0;
@@ -33,18 +33,19 @@ void enterSplashState() {
 
 
 bool isSystemReady() {
-    // Check if both WiFi and BLE keyboard are ready
-    bool wifiReady = wifi.isConnected();
-    bool bleReady = bleKeyboard.isConnected();
+    // Use the services layer to check system readiness
+    bool systemReady = Services::instance().isSystemReady();
 
     // Only log status every 5 seconds to avoid spam
     unsigned long currentTime = millis();
     if (currentTime - lastStateCheck > 5000) {
+        bool wifiReady = Services::instance().wifi().isConnected();
+        bool bleReady = Services::instance().bleKeyboard().isConnected();
         ESP_LOGI(TAG, "System status - WiFi: %s, BLE: %s", wifiReady ? "Ready" : "Not Ready", bleReady ? "Ready" : "Not Ready");
         lastStateCheck = currentTime;
     }
 
-    return wifiReady && bleReady;
+    return systemReady;
 }
 
 void setup() {
@@ -53,63 +54,39 @@ void setup() {
     // Show INFO and above, hide DEBUG/VERBOSE
     esp_log_level_set("*", ESP_LOG_INFO);
 
-    // Reset display and turn on backlight
-    manualResetDisplay();
+    // Initialize all services
+    if (!Services::instance().initialize()) {
+        ESP_LOGE(TAG, "Failed to initialize services");
+        return;
+    }
 
-    audio.begin();
-
-    // Initialize TFT display
-    tft.init();
-    tft.setRotation(3);
-
-    // Initialize touch controller
-    initTouch(touch);
-
-    // Initialize LVGL
-    lv_init();
-    initLVGLDisplay(tft, touch);
+    // Initialize application controller
+    if (!appController.initialize()) {
+        ESP_LOGE(TAG, "Failed to initialize application controller");
+        return;
+    }
 
     // Initialize UI
     ui_init();
+    
     // Start in splash state
-    enterSplashState();
+    appController.enterSplashState();
+    enterSplashState(); // Legacy compatibility
 
-    // Initialize BLE keyboard functionality
-    bleKeyboard.setPowerLevel(-20);
-    bleKeyboard.begin();
-
-    // Set callback to connect BLE keyboard to LVGL key processing
-    bleKeyboard.setKeyCallback(sendKeyToLVGL);
-
-    // Initialize key processing
-    getKeyProcessing().begin();
-
-    // Initialize WiFi - this will try saved credentials first, then show UI if needed
-    wifi.begin();
+    // Set up BLE keyboard callback to use the new KeyProcessor
+    Services::instance().bleKeyboard().setKeyCallback([](char key, uint8_t keyCode, uint8_t modifiers) {
+        Services::instance().keyProcessor().sendKeyToLVGL(key, keyCode, modifiers);
+    });
 }
 
 void loop() {
-    // Handle LVGL tasks
-    handleLVGLTasks();
-
-    bleKeyboard.tick();
-    wifi.tick();
-
-    // Process queued keyboard events and function actions
-    getKeyProcessing().tick();
-
-    // State machine logic
-    switch (currentState) {
-    case STATE_SPLASH:
-        // Check if system is ready to transition to main
-        if (isSystemReady()) {
-            enterMainState();
-        }
-        break;
-
-    case STATE_MAIN:
-        // just stay here
-        break;
+    // Use the new application controller
+    appController.tick();
+    
+    // Legacy state management for compatibility
+    currentState = appController.getCurrentState();
+    if (isSystemReady() && currentState == STATE_SPLASH) {
+        enterMainState();
     }
 
     delay(5); // Small delay for LVGL

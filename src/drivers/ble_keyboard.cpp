@@ -91,6 +91,36 @@ BLEKeyboard::~BLEKeyboard() {
     }
 }
 
+bool BLEKeyboard::initialize() {
+    begin(0);
+    return true;
+}
+
+void BLEKeyboard::shutdown() {
+    // Clean up BLE resources if needed
+    if (pScan) {
+        pScan->stop();
+    }
+}
+
+void BLEKeyboard::tick() {
+    // Call the existing tick logic
+    /** Loop here until we find a device we want to connect to */
+    if (doConnect) {
+        doConnect = false;
+        /** Found a device we want to connect to, do it now */
+        if (connectToServer()) {
+            ESP_LOGI(TAG, "Success! we should now be getting notifications, no scanning for more!");
+        } else {
+            ESP_LOGW(TAG, "Failed to connect, no starting scan");
+        }
+    }
+}
+
+bool BLEKeyboard::isReady() const {
+    return isConnected();
+}
+
 void BLEKeyboard::begin(uint32_t scanRestartIntervalMs) {
     // Store the scan restart interval
     this->scanRestartIntervalMs = scanRestartIntervalMs;
@@ -131,18 +161,7 @@ void BLEKeyboard::begin(uint32_t scanRestartIntervalMs) {
     ESP_LOGI(TAG, "Scanning for peripherals");
 }
 
-void BLEKeyboard::tick() {
-    /** Loop here until we find a device we want to connect to */
-    if (doConnect) {
-        doConnect = false;
-        /** Found a device we want to connect to, do it now */
-        if (connectToServer()) {
-            ESP_LOGI(TAG, "Success! we should now be getting notifications, no scanning for more!");
-        } else {
-            ESP_LOGW(TAG, "Failed to connect, no starting scan");
-        }
-    }
-}
+// tick() method is now implemented above in the DriverInterface section
 
 void BLEKeyboard::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
     // std::string str = (isNotify == true) ? "Notification" : "Indication";
