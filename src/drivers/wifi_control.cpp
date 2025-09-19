@@ -29,6 +29,7 @@ WiFiControl::~WiFiControl() {
 
 bool WiFiControl::begin() {
     ESP_LOGI(TAG, "Starting WiFi initialization...");
+    WiFi.setAutoReconnect(false);
     client.setCACertBundle(certs_x509_crt_bundle_start, certs_x509_crt_bundle_end - certs_x509_crt_bundle_start);
         
     // Initialize preferences for NVS storage
@@ -302,16 +303,13 @@ void WiFiControl::tick() {
         
         wasConnected = currentlyConnected;
         
-        // If disconnected for more than 10 seconds, show WiFi settings UI
-        if (!currentlyConnected && lastDisconnectionTime > 0 && 
+        // Only show UI automatically if it hasn't been shown yet
+        // Once UI is shown, don't automatically retry
+        if (!uiInitialized && !currentlyConnected && lastDisconnectionTime > 0 && 
             (currentTime - lastDisconnectionTime) > 10000) {
             
             ESP_LOGW(TAG, "WiFi disconnected for too long, showing settings UI...");
-            
-            // Only show UI if it's not already shown
-            if (!uiInitialized) {
-                showWiFiSettingsUI();
-            }
+            showWiFiSettingsUI();
         }
     }
 }
