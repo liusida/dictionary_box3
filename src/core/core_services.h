@@ -1,29 +1,26 @@
 #pragma once
+#include <Arduino.h>
 #include <memory>
 #include "driver_interface.h"
 
 // Forward declarations
 class AudioManager;
-class BLEKeyboard;
-class WiFiControl;
 class DisplayManager;
 class KeyProcessor;
 
 /**
- * @brief Centralized service registry for managing all system services
+ * @brief Core services manager for Tier 1 (essential) services
  * 
- * This singleton provides access to all system services and manages
- * their lifecycle. This eliminates the need for global objects and
- * provides a clean interface for dependency injection.
+ * Manages display, audio, and input processing services that are
+ * essential for basic app functionality. These services must initialize
+ * successfully for the app to work.
  */
-class Services {
+class CoreServices {
 public:
-    static Services& instance();
+    static CoreServices& instance();
     
     // Service accessors
     AudioManager& audio();
-    BLEKeyboard& bleKeyboard();
-    WiFiControl& wifi();
     DisplayManager& display();
     KeyProcessor& keyProcessor();
     
@@ -32,20 +29,18 @@ public:
     void shutdown();
     
     // Status checking
-    bool isSystemReady() const;
+    bool isReady() const;
     
 private:
-    Services() = default;
-    ~Services() = default;
+    CoreServices() = default;
+    ~CoreServices() = default;
     
     // Disable copy constructor and assignment operator
-    Services(const Services&) = delete;
-    Services& operator=(const Services&) = delete;
+    CoreServices(const CoreServices&) = delete;
+    CoreServices& operator=(const CoreServices&) = delete;
     
     // Service instances
     std::unique_ptr<AudioManager> audioManager_;
-    std::unique_ptr<BLEKeyboard> bleKeyboard_;
-    std::unique_ptr<WiFiControl> wifiControl_;
     std::unique_ptr<DisplayManager> displayManager_;
     std::unique_ptr<KeyProcessor> keyProcessor_;
     

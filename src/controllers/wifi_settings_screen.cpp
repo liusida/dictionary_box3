@@ -3,7 +3,7 @@
 #include "core/log.h"
 #include "drivers/wifi_control.h"
 #include "ui/ui.h"
-#include "core/services.h"
+#include "core/service_manager.h"
 #include <vector>
 
 static const char* TAG = "WiFiSettingsScreen";
@@ -58,7 +58,7 @@ void WiFiSettingsScreen::addObjectToDefaultGroup(lv_obj_t* obj) {
 
 void WiFiSettingsScreen::scanAndPopulateNetworks() {
     // Use the WiFi driver to scan networks
-    std::vector<String> networks = Services::instance().wifi().scanNetworks();
+    std::vector<String> networks = ServiceManager::instance().wifi().scanNetworks();
     
     if (networks.empty()) {
         lv_dropdown_set_options(ui_InputSSIDs, "No networks found");
@@ -105,7 +105,7 @@ void WiFiSettingsScreen::connectButtonCallback(lv_event_t * e) {
     String password = lv_textarea_get_text(ui_InputPassword);
 
     // Use WiFi driver to connect and save credentials
-    bool ok = Services::instance().wifi().connectToNetwork(ssid, password);
+    bool ok = ServiceManager::instance().wifi().connectToNetwork(ssid, password);
 
     if (ok) {
         lv_label_set_text(lv_obj_get_child(ui_BtnConnect, 0), "Connected!");

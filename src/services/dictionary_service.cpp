@@ -1,5 +1,5 @@
 #include "dictionary_service.h"
-#include "core/services.h"
+#include "core/service_manager.h"
 #include "core/event_publisher.h"
 #include "drivers/audio_manager.h"
 #include <HTTPClient.h>
@@ -167,7 +167,7 @@ bool DictionaryService::playAudio(const String& word, const String& audioType) {
     // Publish audio requested event
     EventPublisher::instance().publishDictionaryEvent(DictionaryEvent::AudioRequested, word, "", "", audioType);
     
-    return Services::instance().audio().play(url.c_str());
+    return ServiceManager::instance().audio().play(url.c_str());
 }
 
 bool DictionaryService::isReady() const {

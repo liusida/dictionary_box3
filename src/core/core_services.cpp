@@ -1,33 +1,29 @@
-#include "services.h"
+#include "core_services.h"
 #include "drivers/audio_manager.h"
-#include "drivers/ble_keyboard.h"
-#include "drivers/wifi_control.h"
 #include "drivers/display_manager.h"
 #include "input/key_processor.h"
 #include "core/log.h"
 
-static const char *TAG = "Services";
+static const char *TAG = "CoreServices";
 
-Services& Services::instance() {
-    static Services instance;
+CoreServices& CoreServices::instance() {
+    static CoreServices instance;
     return instance;
 }
 
-bool Services::initialize() {
+bool CoreServices::initialize() {
     if (initialized_) {
         return true;
     }
     
-    ESP_LOGI(TAG, "Initializing system services...");
+    ESP_LOGI(TAG, "Initializing core services (Tier 1)...");
     
     // Create service instances
     audioManager_ = std::make_unique<AudioManager>();
-    bleKeyboard_ = std::make_unique<BLEKeyboard>();
-    wifiControl_ = std::make_unique<WiFiControl>();
     displayManager_ = std::make_unique<DisplayManager>();
     keyProcessor_ = std::make_unique<KeyProcessor>();
     
-    // Initialize services
+    // Initialize services - all must succeed
     bool success = true;
     
     if (!audioManager_->initialize()) {
@@ -40,38 +36,31 @@ bool Services::initialize() {
         success = false;
     }
     
-    bleKeyboard_->begin();
-    wifiControl_->begin();
-    keyProcessor_->initialize();
+    if (!keyProcessor_->initialize()) {
+        ESP_LOGE(TAG, "Failed to initialize key processor");
+        success = false;
+    }
     
     if (success) {
         initialized_ = true;
-        ESP_LOGI(TAG, "All services initialized successfully");
+        ESP_LOGI(TAG, "Core services initialized successfully");
     } else {
-        ESP_LOGE(TAG, "Some services failed to initialize");
+        ESP_LOGE(TAG, "Core services initialization failed");
     }
     
     return success;
 }
 
-void Services::shutdown() {
+void CoreServices::shutdown() {
     if (!initialized_) {
         return;
     }
     
-    ESP_LOGI(TAG, "Shutting down services...");
+    ESP_LOGI(TAG, "Shutting down core services...");
     
     // Shutdown services in reverse order
     if (keyProcessor_) {
         keyProcessor_->shutdown();
-    }
-    
-    if (wifiControl_) {
-        wifiControl_->shutdown();
-    }
-    
-    if (bleKeyboard_) {
-        bleKeyboard_->shutdown();
     }
     
     if (displayManager_) {
@@ -84,53 +73,28 @@ void Services::shutdown() {
     
     // Clear all instances
     audioManager_.reset();
-    bleKeyboard_.reset();
-    wifiControl_.reset();
     displayManager_.reset();
     keyProcessor_.reset();
     
     initialized_ = false;
-    ESP_LOGI(TAG, "Services shutdown complete");
+    ESP_LOGI(TAG, "Core services shutdown complete");
 }
 
-bool Services::isSystemReady() const {
-    if (!initialized_) {
-        return false;
-    }
-    
-    return wifiControl_->isConnected() && bleKeyboard_->isConnected();
+bool CoreServices::isReady() const {
+    return initialized_;
 }
 
 // Service accessors
-AudioManager& Services::audio() {
+AudioManager& CoreServices::audio() {
     if (!audioManager_) {
         ESP_LOGE(TAG, "AudioManager not initialized");
-        // Return a reference to a static dummy object to avoid crashes
         static AudioManager dummy;
         return dummy;
     }
     return *audioManager_;
 }
 
-BLEKeyboard& Services::bleKeyboard() {
-    if (!bleKeyboard_) {
-        ESP_LOGE(TAG, "BLEKeyboard not initialized");
-        static BLEKeyboard dummy;
-        return dummy;
-    }
-    return *bleKeyboard_;
-}
-
-WiFiControl& Services::wifi() {
-    if (!wifiControl_) {
-        ESP_LOGE(TAG, "WiFiControl not initialized");
-        static WiFiControl dummy;
-        return dummy;
-    }
-    return *wifiControl_;
-}
-
-DisplayManager& Services::display() {
+DisplayManager& CoreServices::display() {
     if (!displayManager_) {
         ESP_LOGE(TAG, "DisplayManager not initialized");
         static DisplayManager dummy;
@@ -139,7 +103,7 @@ DisplayManager& Services::display() {
     return *displayManager_;
 }
 
-KeyProcessor& Services::keyProcessor() {
+KeyProcessor& CoreServices::keyProcessor() {
     if (!keyProcessor_) {
         ESP_LOGE(TAG, "KeyProcessor not initialized");
         static KeyProcessor dummy;
@@ -147,4 +111,3 @@ KeyProcessor& Services::keyProcessor() {
     }
     return *keyProcessor_;
 }
-

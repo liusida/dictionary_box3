@@ -1,6 +1,7 @@
 #pragma once
-#include "core/services.h"
+#include "core/service_manager.h"
 #include "controllers/main_screen.h"
+#include "controllers/splash_screen.h"
 #include "controllers/wifi_settings_screen.h"
 #include "controllers/keyboard_settings_screen.h"
 #include "main.h"
@@ -57,7 +58,8 @@ public:
     AppState getCurrentState() const;
     
 private:
-    Services& services_;
+    ServiceManager& serviceManager_;
+    SplashScreen splashScreen_;
     MainScreen mainScreen_;
     WiFiSettingsScreen wifiSettingsScreen_;
     KeyboardSettingsScreen keyboardSettingsScreen_;

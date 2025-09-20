@@ -1,9 +1,8 @@
 #include <Arduino.h>
 
-#include "core/services.h"
-#include "controllers/app.h"
-#include "input/key_processor.h"
+#include "core/service_manager.h"
 #include "drivers/ble_keyboard.h"
+#include "controllers/app.h"
 #include "ui/ui.h"
 #include "core/log.h"
 static const char *TAG = "App";
@@ -15,28 +14,31 @@ App app;
 void setup() {
     Serial.begin(115200);
 
-    // Initialize all services
-    if (!Services::instance().initialize()) {
-        ESP_LOGE(TAG, "Failed to initialize services");
+    ESP_LOGI(TAG, "=== Dictionary v2 - Two-Tier Architecture ===");
+    
+    // Tier 1: Initialize core services (essential)
+    ESP_LOGI(TAG, "Initializing core services (Tier 1)...");
+    if (!ServiceManager::instance().initializeCore()) {
+        ESP_LOGE(TAG, "Failed to initialize core services - app cannot continue");
         return;
     }
 
+    ESP_LOGI(TAG, "Initializing UI...");
+    // Initialize UI first so splash screen is available
+    ui_init();
+
+    ESP_LOGI(TAG, "Initializing application controller...");
     // Initialize application
     if (!app.initialize()) {
         ESP_LOGE(TAG, "Failed to initialize application");
         return;
     }
 
-    // Initialize UI
-    ui_init();
-    
-    // Start in splash state
+    ESP_LOGI(TAG, "Entering splash state...");
+    // Start in splash state - this will handle connectivity initialization
     app.enterSplashState();
 
-    // Set up BLE keyboard callback to use the new KeyProcessor
-    Services::instance().bleKeyboard().setKeyCallback([](char key, uint8_t keyCode, uint8_t modifiers) {
-        Services::instance().keyProcessor().sendKeyToLVGL(key, keyCode, modifiers);
-    });
+    ESP_LOGI(TAG, "Setup complete - core services ready, splash screen will handle connectivity initialization");
 }
 
 void loop() {

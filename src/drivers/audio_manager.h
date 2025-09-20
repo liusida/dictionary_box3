@@ -1,6 +1,8 @@
 #ifndef AUDIO_MANAGER_H
 #define AUDIO_MANAGER_H
 
+#define HELIX_LOG_LEVEL LogLevelHelix::Warning
+
 #include <Arduino.h>
 #include <WiFi.h>
 #include "freertos/FreeRTOS.h"
@@ -52,10 +54,13 @@ private:
     bool isPlaying;
     bool isPaused;
     String currentUrl;
+    SemaphoreHandle_t audioMutex;
     
     // Timeout settings
     uint32_t playbackCompleteCountThreshold;
     
+    uint32_t expectedContentLength;
+
     // Private methods
     void fixRemoveID3Info(Stream& s);
     static void audioTask(void* parameter);

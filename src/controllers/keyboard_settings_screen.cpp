@@ -1,7 +1,7 @@
 #include "keyboard_settings_screen.h"
 #include "drivers/lvgl_drive.h"
 #include "core/log.h"
-#include "core/services.h"
+#include "core/service_manager.h"
 #include "drivers/ble_keyboard.h"
 #include "ui/ui.h"
 #include <vector>
@@ -81,13 +81,13 @@ void KeyboardSettingsScreen::scanAndPopulateDevices() {
     lv_obj_add_state(ui_BtnScan, LV_STATE_DISABLED);
     
     // Start BLE scanning
-    Services::instance().bleKeyboard().startScan();
+    ServiceManager::instance().bleKeyboard().startScan();
     
     // Wait a bit for scan to complete (scan duration is typically 500ms)
     delay(1000);
     
     // Get discovered devices from BLE driver
-    std::vector<String> devices = Services::instance().bleKeyboard().getDiscoveredDevices();
+    std::vector<String> devices = ServiceManager::instance().bleKeyboard().getDiscoveredDevices();
     
     if (devices.empty()) {
         lv_dropdown_set_options(ui_InputBLEs, "No devices found");
@@ -143,7 +143,7 @@ void KeyboardSettingsScreen::connectButtonCallback(lv_event_t * e) {
     lv_obj_add_state(ui_BtnConnectBLE, LV_STATE_DISABLED);
     
     // Attempt to connect to the selected device
-    bool success = Services::instance().bleKeyboard().connectToDevice(deviceName);
+    bool success = ServiceManager::instance().bleKeyboard().connectToDevice(deviceName);
     
     if (success) {
         lv_label_set_text(ui_TxtConnectBLE, "Connected!");

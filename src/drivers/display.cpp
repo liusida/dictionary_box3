@@ -81,7 +81,9 @@ static uint32_t my_tick(void) { return millis(); }
 bool initTouch(GT911 &touch) {
   ESP_LOGI(TAG, "Initializing GT911 touch controller...");
 
-  // Initialize I2C for touch with error handling
+  // Initialize I2C for touch controller
+  // Note: Audio manager may have already initialized I2C, but Wire.begin() is safe to call multiple times
+  ESP_LOGI(TAG, "Initializing I2C for touch controller...");
   Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
 
   // Start with lower I2C frequency for better stability
@@ -94,14 +96,23 @@ bool initTouch(GT911 &touch) {
 
   // Try touch initialization with retry
   bool touch_init = false;
-  for (int retry = 0; retry < 3; retry++) {
-    ESP_LOGI(TAG, "Touch init attempt %d/3 at %dHz...", retry + 1, i2c_freq);
+  for (int retry = 0; retry < 5; retry++) {
+    ESP_LOGI(TAG, "Touch init attempt %d/5 at %dHz...", retry + 1, i2c_freq);
+    
+    // Add a small delay before each attempt
+    if (retry > 0) {
+      delay(200);
+    }
+    
     touch_init =
         touch.begin(TOUCH_INT_PIN, TOUCH_RESET_PIN, TOUCH_I2C_ADDR, i2c_freq);
     if (touch_init) {
+      ESP_LOGI(TAG, "Touch initialization successful on attempt %d", retry + 1);
       break;
+    } else {
+      ESP_LOGW(TAG, "Touch init attempt %d failed", retry + 1);
     }
-    delay(100); // Wait before retry
+    delay(500); // Wait longer before retry
   }
 
   if (touch_init) {
@@ -115,7 +126,7 @@ bool initTouch(GT911 &touch) {
     }
     return true;
   } else {
-    ESP_LOGE(TAG, "Touch init FAILED after 3 attempts!");
+    ESP_LOGE(TAG, "Touch init FAILED after 5 attempts!");
     return false;
   }
 }

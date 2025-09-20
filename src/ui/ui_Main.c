@@ -13,6 +13,7 @@ lv_obj_t * ui_TxtExplanation = NULL;
 lv_obj_t * ui_Panel2 = NULL;
 lv_obj_t * ui_TxtSampleSentence = NULL;
 lv_obj_t * ui_LookingUpBar = NULL;
+lv_obj_t * ui_IcoPlaying = NULL;
 // event funtions
 
 // build funtions
@@ -69,6 +70,10 @@ void ui_Main_screen_init(void)
     lv_obj_set_style_text_letter_space(ui_TxtExplanation, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_line_space(ui_TxtExplanation, 8, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_TxtExplanation, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui_TxtExplanation, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui_TxtExplanation, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui_TxtExplanation, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui_TxtExplanation, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_Panel2 = lv_obj_create(ui_Panel1);
     lv_obj_set_height(ui_Panel2, 1);
@@ -88,6 +93,10 @@ void ui_Main_screen_init(void)
     lv_obj_set_style_text_letter_space(ui_TxtSampleSentence, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_line_space(ui_TxtSampleSentence, 8, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_TxtSampleSentence, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui_TxtSampleSentence, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui_TxtSampleSentence, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui_TxtSampleSentence, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui_TxtSampleSentence, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_LookingUpBar = lv_bar_create(ui_Main);
     lv_obj_set_height(ui_LookingUpBar, 10);
@@ -105,6 +114,15 @@ void ui_Main_screen_init(void)
     //Compensating for LVGL9.1 draw crash with bar/slider max value when top-padding is nonzero and right-padding is 0
     if(lv_obj_get_style_pad_top(ui_LookingUpBar, LV_PART_MAIN) > 0) lv_obj_set_style_pad_right(ui_LookingUpBar,
                                                                                                    lv_obj_get_style_pad_right(ui_LookingUpBar, LV_PART_MAIN) + 1, LV_PART_MAIN);
+    ui_IcoPlaying = lv_spinner_create(ui_Main);
+    //lv_spinner_set_anim_params(ui_IcoPlaying, 1000, 90);
+    lv_obj_set_width(ui_IcoPlaying, 10);
+    lv_obj_set_height(ui_IcoPlaying, 10);
+    lv_obj_set_x(ui_IcoPlaying, -10);
+    lv_obj_set_y(ui_IcoPlaying, 10);
+    lv_obj_set_align(ui_IcoPlaying, LV_ALIGN_TOP_RIGHT);
+    lv_obj_add_flag(ui_IcoPlaying, LV_OBJ_FLAG_HIDDEN);     /// Flags
+    lv_obj_remove_flag(ui_IcoPlaying, LV_OBJ_FLAG_CLICKABLE);      /// Flags
 
 }
 
@@ -121,5 +139,6 @@ void ui_Main_screen_destroy(void)
     ui_Panel2 = NULL;
     ui_TxtSampleSentence = NULL;
     ui_LookingUpBar = NULL;
+    ui_IcoPlaying = NULL;
 
 }

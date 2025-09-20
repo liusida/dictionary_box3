@@ -21,6 +21,7 @@ extern lv_obj_t * ui_TxtExplanation;
 extern lv_obj_t * ui_Panel2;
 extern lv_obj_t * ui_TxtSampleSentence;
 extern lv_obj_t * ui_LookingUpBar;
+extern lv_obj_t * ui_IcoPlaying;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

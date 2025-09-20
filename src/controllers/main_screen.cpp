@@ -2,6 +2,8 @@
 #include "drivers/lvgl_drive.h"
 #include "ui/ui.h"
 #include "core/log.h"
+#include "core/connection_monitor.h"
+#include "core/runtime_state_manager.h"
 #include "lvgl.h"
 
 static const char *TAG = "MainScreen";
@@ -9,8 +11,8 @@ static const char *TAG = "MainScreen";
 // Static instance for callbacks
 MainScreen* MainScreen::instance_ = nullptr;
 
-MainScreen::MainScreen(Services& services)
-    : services_(services), initialized_(false) {
+MainScreen::MainScreen(ServiceManager& serviceManager)
+    : serviceManager_(serviceManager), initialized_(false) {
     instance_ = this;
 }
 
@@ -67,8 +69,11 @@ void MainScreen::enterMainState() {
     lv_label_set_text(ui_TxtExplanation, "");
     lv_label_set_text(ui_TxtSampleSentence, "");
     
+    // Initially hide the playing icon
+    lv_obj_add_flag(ui_IcoPlaying, LV_OBJ_FLAG_HIDDEN);
+    
     // Set up callbacks using the new KeyProcessor
-    Services::instance().keyProcessor().setSubmitCallback([]() {
+    serviceManager_.keyProcessor().setSubmitCallback([]() {
         if (instance_) {
             String word = lv_textarea_get_text(ui_InputWord);
             if (word.length() > 0) {
@@ -77,11 +82,14 @@ void MainScreen::enterMainState() {
         }
     });
     
-    Services::instance().keyProcessor().setKeyInCallback([](char key) {
+    serviceManager_.keyProcessor().setKeyInCallback([](char key) {
         if (instance_) {
             instance_->onKeyPressed(key);
         }
     });
+    
+    // Update connection status
+    updateConnectionStatus();
     
     // Clear current state
     currentWord_ = "";
@@ -111,6 +119,7 @@ void MainScreen::onWordSubmitted(const String& word) {
     } else {
         lv_label_set_text(ui_TxtExplanation, "Request failed");
     }
+
 }
 
 void MainScreen::onKeyPressed(char key) {
@@ -147,16 +156,23 @@ String MainScreen::getCurrentWord() const {
 
 void MainScreen::setupEventSubscriptions() {
     // Subscribe to function key events
-    services_.keyProcessor().onFunctionKeyEvent(
+    serviceManager_.keyProcessor().onFunctionKeyEvent(
         [this](const FunctionKeyEvent& event) {
             onFunctionKeyEvent(event);
+        }
+    );
+    
+    // Subscribe to audio events
+    EventSystem::instance().getEventBus<AudioEvent>().subscribe(
+        [this](const AudioEvent& event) {
+            onAudioEvent(event);
         }
     );
 }
 
 void MainScreen::onFunctionKeyEvent(const FunctionKeyEvent& event) {
     // Only handle audio events in main state
-    if (services_.isSystemReady()) {
+    if (serviceManager_.isSystemReady()) {
         switch (event.type) {
             case FunctionKeyEvent::ReadWord:
                 onPlayWordAudio();
@@ -170,6 +186,25 @@ void MainScreen::onFunctionKeyEvent(const FunctionKeyEvent& event) {
             default:
                 break;
         }
+    }
+}
+
+void MainScreen::onAudioEvent(const AudioEvent& event) {
+    switch (event.type) {
+        case AudioEvent::PlaybackStarted:
+            ESP_LOGI(TAG, "Audio playback started - showing playing icon");
+            lv_obj_remove_flag(ui_IcoPlaying, LV_OBJ_FLAG_HIDDEN);
+            break;
+            
+        case AudioEvent::PlaybackStopped:
+        case AudioEvent::PlaybackCompleted:
+        case AudioEvent::PlaybackError:
+            ESP_LOGI(TAG, "Audio playback stopped - hiding playing icon");
+            lv_obj_add_flag(ui_IcoPlaying, LV_OBJ_FLAG_HIDDEN);
+            break;
+            
+        default:
+            break;
     }
 }
 
@@ -206,4 +241,28 @@ void MainScreen::keyInCallback(char key) {
     if (instance_) {
         instance_->onKeyPressed(key);
     }
+}
+
+void MainScreen::updateConnectionStatus() {
+    // This would update UI indicators for connection status
+    // For now, we'll just log the status
+    bool wifiHealthy = ConnectionMonitor::instance().isWiFiHealthy();
+    bool bleHealthy = ConnectionMonitor::instance().isBLEHealthy();
+    
+    ESP_LOGI(TAG, "Connection status - WiFi: %s, BLE: %s", 
+             wifiHealthy ? "Connected" : "Disconnected",
+             bleHealthy ? "Connected" : "Disconnected");
+    
+    // TODO: Update UI indicators (status lights, buttons, etc.)
+    // This would involve updating LVGL objects to show connection status
+}
+
+void MainScreen::onRequestWiFiRecovery() {
+    ESP_LOGI(TAG, "User requested WiFi recovery");
+    RuntimeStateManager::instance().requestWiFiSettings();
+}
+
+void MainScreen::onRequestBLERecovery() {
+    ESP_LOGI(TAG, "User requested BLE recovery");
+    RuntimeStateManager::instance().requestKeyboardSettings();
 }

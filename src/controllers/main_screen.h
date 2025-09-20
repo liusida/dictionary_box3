@@ -1,7 +1,8 @@
 #pragma once
-#include "core/services.h"
+#include "core/service_manager.h"
 #include "services/dictionary_service.h"
 #include "core/event_system.h"
+#include "core/events.h"
 #include "input/key_processor.h"
 #include "lvgl.h"
 
@@ -23,7 +24,7 @@ extern "C" {
  */
 class MainScreen {
 public:
-    MainScreen(Services& services);
+    MainScreen(ServiceManager& serviceManager);
     ~MainScreen();
     
     /**
@@ -75,13 +76,24 @@ public:
     void updateUI();
     
     /**
+     * @brief Update connection status indicators
+     */
+    void updateConnectionStatus();
+    
+    /**
      * @brief Get the current word being displayed
      * @return The current word
      */
     String getCurrentWord() const;
     
+    /**
+     * @brief Handle manual recovery requests
+     */
+    void onRequestWiFiRecovery();
+    void onRequestBLERecovery();
+    
 private:
-    Services& services_;
+    ServiceManager& serviceManager_;
     DictionaryService dictionaryService_;
     String currentWord_;
     DictionaryResult currentResult_;
@@ -90,6 +102,7 @@ private:
     // Event subscriptions
     void setupEventSubscriptions();
     void onFunctionKeyEvent(const FunctionKeyEvent& event);
+    void onAudioEvent(const AudioEvent& event);
     
     // UI helpers
     void showInputMode();

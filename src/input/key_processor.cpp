@@ -1,5 +1,5 @@
 #include "key_processor.h"
-#include "core/services.h"
+#include "core/service_manager.h"
 #include "drivers/audio_manager.h"
 #include "utils.h"
 #include "core/log.h"
@@ -161,14 +161,14 @@ void KeyProcessor::processQueuedFunctions() {
                 currentVolume -= 0.05f;
                 if (currentVolume < 0.0f) currentVolume = 0.0f;
                 ESP_LOGD(TAG, "Volume: %f", currentVolume);
-                Services::instance().audio().setVolume(currentVolume);
+                ServiceManager::instance().audio().setVolume(currentVolume);
                 break;
                 
             case FunctionKeyEvent::VolumeUp:
                 currentVolume += 0.05f;
                 if (currentVolume > 1.0f) currentVolume = 1.0f;
                 ESP_LOGD(TAG, "Volume: %f", currentVolume);
-                Services::instance().audio().setVolume(currentVolume);
+                ServiceManager::instance().audio().setVolume(currentVolume);
                 break;
                 
             case FunctionKeyEvent::PrintMemoryStatus:

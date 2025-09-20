@@ -1,17 +1,20 @@
 #include "app.h"
 #include "core/event_system.h"
+#include "core/connection_monitor.h"
+#include "core/runtime_state_manager.h"
+#include "drivers/display_manager.h"
+#include "drivers/wifi_control.h"
+#include "drivers/ble_keyboard.h"
 #include "ui/ui.h"
 #include "drivers/lvgl_drive.h"
-#include "drivers/display_manager.h"
-#include "drivers/ble_keyboard.h"
-#include "drivers/wifi_control.h"
 #include "core/log.h"
 
 static const char *TAG = "App";
 
 App::App() 
-    : services_(Services::instance()), 
-      mainScreen_(services_),
+    : serviceManager_(ServiceManager::instance()), 
+      splashScreen_(),
+      mainScreen_(serviceManager_),
       currentState_(STATE_SPLASH),
       stateTransitioned_(false),
       lastStateCheck_(0),
@@ -29,6 +32,11 @@ bool App::initialize() {
     
     ESP_LOGI(TAG, "Initializing application controller...");
     
+    if (!splashScreen_.initialize()) {
+        ESP_LOGE(TAG, "Failed to initialize splash screen");
+        return false;
+    }
+    
     if (!mainScreen_.initialize()) {
         ESP_LOGE(TAG, "Failed to initialize main screen");
         return false;
@@ -38,6 +46,11 @@ bool App::initialize() {
     
     // Initialize keyboard settings screen
     keyboardSettingsScreen_.initialize();
+    
+    // Initialize runtime state management
+    ConnectionMonitor::instance().initialize();
+    RuntimeStateManager::instance().initialize();
+    RuntimeStateManager::instance().setAppController(this);
     
     initialized_ = true;
     ESP_LOGI(TAG, "Application controller initialized");
@@ -65,12 +78,19 @@ void App::tick() {
     EventSystem::instance().processAllEvents();
     
     // Handle LVGL tasks
-    services_.display().tick();
+    serviceManager_.display().tick();
     
     // Tick all services
-    services_.bleKeyboard().tick();
-    services_.wifi().tick();
-    services_.keyProcessor().tick();
+    serviceManager_.bleKeyboard().tick();
+    serviceManager_.wifi().tick();
+    serviceManager_.keyProcessor().tick();
+    
+    // Tick splash screen (handles connectivity initialization)
+    splashScreen_.tick();
+    
+    // Monitor connection health and handle runtime failures
+    ConnectionMonitor::instance().tick();
+    RuntimeStateManager::instance().tick();
     
     // Update state machine
     updateStateMachine();
@@ -80,7 +100,18 @@ void App::enterSplashState() {
     ESP_LOGI(TAG, "Entering SPLASH state");
     currentState_ = STATE_SPLASH;
     stateTransitioned_ = true;
-    loadScreen(ui_Splash);
+    
+    // Start splash screen and connectivity initialization
+    splashScreen_.enterSplashState();
+    splashScreen_.startConnectivityInitialization();
+    
+    // Force LVGL refresh to ensure splash screen is visible
+    serviceManager_.display().tick();
+    
+    // Give the display time to render
+    delay(100);
+    
+    ESP_LOGI(TAG, "Splash screen loaded and connectivity initialization started");
 }
 
 void App::enterMainState() {
@@ -105,7 +136,7 @@ void App::enterKeyboardSettingsState() {
 }
 
 bool App::isSystemReady() const {
-    return services_.isSystemReady();
+    return serviceManager_.isSystemReady();
 }
 
 AppState App::getCurrentState() const {
@@ -115,13 +146,27 @@ AppState App::getCurrentState() const {
 void App::updateStateMachine() {
     switch (currentState_) {
         case STATE_SPLASH:
-            // Check if WiFi is not connected first
-            if (!services_.wifi().isConnected()) {
-                enterWiFiSettingsState();
-            }
-            // Then check if system is ready to transition to main
-            else if (isSystemReady()) {
-                enterMainState();
+            // Check if splash screen is ready to transition
+            if (splashScreen_.isConnectivityInitialized()) {
+                // Connectivity is ready, check what to do next
+                bool wifiConnected = serviceManager_.wifi().isConnected();
+                bool bleConnected = serviceManager_.bleKeyboard().isConnected();
+                
+                ESP_LOGI(TAG, "Splash transition check - WiFi: %s, BLE: %s", 
+                         wifiConnected ? "Connected" : "Disconnected",
+                         bleConnected ? "Connected" : "Disconnected");
+                
+                if (!wifiConnected) {
+                    ESP_LOGI(TAG, "Transitioning to WiFi settings");
+                    enterWiFiSettingsState();
+                } else if (!bleConnected) {
+                    // WiFi is connected but BLE keyboard is not - go to keyboard settings
+                    ESP_LOGI(TAG, "Transitioning to keyboard settings");
+                    enterKeyboardSettingsState();
+                } else if (isSystemReady()) {
+                    ESP_LOGI(TAG, "Transitioning to main screen");
+                    enterMainState();
+                }
             }
             break;
             
@@ -130,14 +175,17 @@ void App::updateStateMachine() {
             break;
         case STATE_WIFI_SETTINGS:
             // If WiFi connected, return to main
-            if (services_.wifi().isConnected()) {
+            if (serviceManager_.wifi().isConnected()) {
                 enterMainState();
+            }
+            if (!serviceManager_.bleKeyboard().isConnected()) {
+                enterKeyboardSettingsState();
             }
             break;
             
         case STATE_KEYBOARD_SETTINGS:
             // If BLE connected, return to main
-            if (services_.bleKeyboard().isConnected()) {
+            if (serviceManager_.bleKeyboard().isConnected()) {
                 enterMainState();
             }
             break;
