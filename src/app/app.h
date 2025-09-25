@@ -5,7 +5,7 @@
 // Driver forward declarations
 class DisplayManager;
 class AudioManager;
-class WiFiControl;
+class NetworkControl;
 class BLEKeyboard;
 
 // Screen controller forward declarations
@@ -58,7 +58,7 @@ private:
     // Drivers (following simplified architecture)
     std::unique_ptr<DisplayManager> displayDriver_;
     std::unique_ptr<AudioManager> audioDriver_;
-    std::unique_ptr<WiFiControl> wifiDriver_;
+    std::unique_ptr<NetworkControl> wifiDriver_;
     std::unique_ptr<BLEKeyboard> bleDriver_;
     
     // Screen controllers

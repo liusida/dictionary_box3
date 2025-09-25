@@ -2,12 +2,12 @@
   "name": "core_log",
   "version": "0.1.0",
   "description": "Thin wrapper exposing core/log.h for ESP-IDF logging with optional highlighting toggles.",
-  "keywords": "logging, esp-idf, arduino",
+  "keywords": ["logging", "esp-idf", "arduino"],
   "authors": [
     { "name": "Dictionary_v2" }
   ],
   "license": "MIT",
-  "frameworks": "arduino",
+  "frameworks": ["arduino"],
   "platforms": ["espressif32"]
 }
 

@@ -2,12 +2,12 @@
   "name": "drivers_display",
   "version": "0.1.0",
   "description": "Display and touch driver manager for ESP32-S3 Box (LVGL + TFT_eSPI + GT911)",
-  "keywords": "display,lvgl,tft,gt911",
+  "keywords": ["display", "lvgl", "tft", "gt911"],
   "authors": [
     { "name": "Dictionary_v2" }
   ],
   "license": "MIT",
-  "frameworks": "arduino",
+  "frameworks": ["arduino"],
   "platforms": ["espressif32"],
   "dependencies": [
     { "name": "core_log", "version": ">=0.1.0" },

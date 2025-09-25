@@ -1,6 +1,6 @@
 #include "main_screen.h"
 #include "drivers/lvgl_drive.h"
-#include "drivers/wifi_control.h"
+#include "network_control.h"
 #include "audio_manager.h"
 #include "drivers/ble_keyboard.h"
 #include "ui/ui.h"
@@ -12,7 +12,7 @@ static const char *TAG = "MainScreen";
 // Static instance for callbacks
 MainScreen* MainScreen::instance_ = nullptr;
 
-MainScreen::MainScreen(WiFiControl& wifiDriver, AudioManager& audioDriver, BLEKeyboard& bleDriver)
+MainScreen::MainScreen(NetworkControl& wifiDriver, AudioManager& audioDriver, BLEKeyboard& bleDriver)
     : wifiDriver_(wifiDriver), audioDriver_(audioDriver), bleDriver_(bleDriver), 
       dictionaryApi_(audioDriver), initialized_(false) {
     instance_ = this;

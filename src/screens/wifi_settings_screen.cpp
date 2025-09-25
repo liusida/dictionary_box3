@@ -1,10 +1,10 @@
 #include "wifi_settings_screen.h"
-#include "drivers/wifi_control.h"
+#include "network_control.h"
 #include "core/log.h"
 
 static const char *TAG = "WiFiSettingsScreen";
 
-WiFiSettingsScreen::WiFiSettingsScreen(WiFiControl& wifiDriver) 
+WiFiSettingsScreen::WiFiSettingsScreen(NetworkControl& wifiDriver) 
     : wifiDriver_(wifiDriver),
       initialized_(false) {
 }

@@ -2,7 +2,7 @@
 #include "ui/ui.h"
 
 // Forward declarations for drivers
-class WiFiControl;
+class NetworkControl;
 class BLEKeyboard;
 
 /**
@@ -13,7 +13,7 @@ class BLEKeyboard;
  */
 class SplashScreen {
 public:
-    SplashScreen(WiFiControl* wifiDriver, BLEKeyboard* bleDriver);
+    SplashScreen(NetworkControl* wifiDriver, BLEKeyboard* bleDriver);
     ~SplashScreen();
     
     bool initialize();
@@ -37,7 +37,7 @@ public:
     
 private:
     // Drivers (following simplified architecture)
-    WiFiControl* wifiDriver_;
+    NetworkControl* wifiDriver_;
     BLEKeyboard* bleDriver_;
     
     bool initialized_;

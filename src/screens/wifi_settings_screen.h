@@ -2,7 +2,7 @@
 #include "ui/ui.h"
 
 // Forward declarations for drivers
-class WiFiControl;
+class NetworkControl;
 
 /**
  * @brief Simplified WiFi settings screen manager
@@ -12,7 +12,7 @@ class WiFiControl;
  */
 class WiFiSettingsScreen {
 public:
-    WiFiSettingsScreen(WiFiControl& wifiDriver);
+    WiFiSettingsScreen(NetworkControl& wifiDriver);
     ~WiFiSettingsScreen();
     
     bool initialize();
@@ -23,7 +23,7 @@ public:
     
 private:
     // Driver (following simplified architecture)
-    WiFiControl& wifiDriver_;
+    NetworkControl& wifiDriver_;
     
     bool initialized_;
     

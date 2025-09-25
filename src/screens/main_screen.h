@@ -4,7 +4,7 @@
 #include "lvgl.h"
 
 // Forward declarations for drivers
-class WiFiControl;
+class NetworkControl;
 class AudioManager;
 class BLEKeyboard;
 
@@ -26,7 +26,7 @@ extern "C" {
  */
 class MainScreen {
 public:
-    MainScreen(WiFiControl& wifiDriver, AudioManager& audioDriver, BLEKeyboard& bleDriver);
+    MainScreen(NetworkControl& wifiDriver, AudioManager& audioDriver, BLEKeyboard& bleDriver);
     ~MainScreen();
     
     /**
@@ -95,7 +95,7 @@ public:
     
 private:
     // Drivers (following simplified architecture)
-    WiFiControl& wifiDriver_;
+    NetworkControl& wifiDriver_;
     AudioManager& audioDriver_;
     BLEKeyboard& bleDriver_;
     

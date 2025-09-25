@@ -2,12 +2,12 @@
   "name": "drivers_i2c",
   "version": "0.1.0",
   "description": "Shared I2C bus manager",
-  "keywords": "i2c,wire",
+  "keywords": ["i2c", "wire"],
   "authors": [
     { "name": "Dictionary_v2" }
   ],
   "license": "MIT",
-  "frameworks": "arduino",
+  "frameworks": ["arduino"],
   "platforms": ["espressif32"],
   "dependencies": [
     { "name": "core_log", "version": ">=0.1.0" }

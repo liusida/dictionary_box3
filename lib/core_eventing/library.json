@@ -2,12 +2,12 @@
   "name": "core_eventing",
   "version": "0.1.0",
   "description": "Typed event bus, event system, and publisher under core::eventing namespace.",
-  "keywords": "event,bus,pubsub",
+  "keywords": ["event", "bus", "pubsub"],
   "authors": [
     { "name": "Dictionary_v2" }
   ],
   "license": "MIT",
-  "frameworks": "arduino",
+  "frameworks": ["arduino"],
   "platforms": ["espressif32"],
   "dependencies": [
     { "name": "core_log", "version": ">=0.1.0" }

@@ -1,50 +1,36 @@
 #include "ble_keyboard.h"
-#include "core/log.h"
-#include "app/state_manager.h"
+#include "log.h"
+
 static const char *TAG = "BLE";
 
-// Client callbacks implementation
 class BLEKeyboard::ClientCallbacks : public NimBLEClientCallbacks {
   public:
     BLEKeyboard *keyboard;
-
     ClientCallbacks(BLEKeyboard *kb) : keyboard(kb) {}
-
     void onConnect(NimBLEClient *pClient) override { ESP_LOGI(TAG, "Connected"); }
-
     void onDisconnect(NimBLEClient *pClient, int reason) override {
         ESP_LOGW(TAG, "%s Disconnected, reason = %d - Starting scan", pClient->getPeerAddress().toString().c_str(), reason);
-
         keyboard->advDevice = nullptr;
         keyboard->toKeyboardSettings = true;
         keyboard->pScan->start(keyboard->scanTimeMs, false, true);
     }
 };
 
-// Scan callbacks implementation
 class BLEKeyboard::ScanCallbacks : public NimBLEScanCallbacks {
   public:
     BLEKeyboard *keyboard;
-
     ScanCallbacks(BLEKeyboard *kb) : keyboard(kb) {}
-
     void onResult(const NimBLEAdvertisedDevice *advertisedDevice) override {
         bool found = false;
-        // Print only name (if exists) and address
         String deviceName = advertisedDevice->getName().c_str();
         String deviceAddr = advertisedDevice->getAddress().toString().c_str();
-
-        // Add all discovered devices to the list for UI
         if (deviceName.length() > 0) {
             ESP_LOGD(TAG, "Found Device: %s (%s)", deviceName.c_str(), deviceAddr.c_str());
-            // Add to discovered devices list (name, address)
             keyboard->discoveredDevices.push_back(std::make_pair(deviceName, deviceAddr));
         } else {
             ESP_LOGD(TAG, "Found Device: %s", deviceAddr.c_str());
-            // Use address as name if no name available
             keyboard->discoveredDevices.push_back(std::make_pair(deviceAddr, deviceAddr));
         }
-
         if (keyboard->preferences.getString("addr").equals(String(advertisedDevice->getAddress().toString().c_str()))) {
             found = true;
         }
@@ -54,47 +40,30 @@ class BLEKeyboard::ScanCallbacks : public NimBLEScanCallbacks {
         if (found) {
             ESP_LOGI(TAG, "Found Our Service");
             keyboard->preferences.putString("addr", advertisedDevice->getAddress().toString().c_str());
-            /** stop scan before connecting */
             keyboard->pScan->stop();
-            /** Save the device reference in a global for the client to use*/
             keyboard->advDevice = advertisedDevice;
-            /** Ready to connect now */
             keyboard->doConnect = true;
         }
     }
-
-    /** Callback to process the results of the completed scan or restart it */
     void onScanEnd(const NimBLEScanResults &results, int reason) override {
         ESP_LOGI(TAG, "Scan Ended, reason: %d, device count: %d; Restarting scan", reason, results.getCount());
-        // delay(keyboard->scanRestartIntervalMs); // wait before starting scan again
-        // don't do auto re-scan
-        // keyboard->pScan->start(keyboard->scanTimeMs, false, true);
         keyboard->toKeyboardSettings = true;
     }
 };
 
-// BLEKeyboard implementation
-
-// Static instance pointer for notifyCB access
 static BLEKeyboard *keyboardInstance = nullptr;
 
 BLEKeyboard::BLEKeyboard()
     : advDevice(nullptr), doConnect(false), powerLevel(-15), scanTimeMs(500), scanRestartIntervalMs(0), clientCallbacks(nullptr),
       scanCallbacks(nullptr), keyCallback(nullptr), toKeyboardSettings(false) {
-    // Initialize callback objects
     clientCallbacks = new ClientCallbacks(this);
     scanCallbacks = new ScanCallbacks(this);
-
-    // Set static instance pointer
     keyboardInstance = this;
 }
 
 BLEKeyboard::~BLEKeyboard() {
-    // Clean up callback objects
     delete clientCallbacks;
     delete scanCallbacks;
-
-    // Clear static instance pointer
     if (keyboardInstance == this) {
         keyboardInstance = nullptr;
     }
@@ -106,98 +75,54 @@ bool BLEKeyboard::initialize() {
 }
 
 void BLEKeyboard::shutdown() {
-    // Clean up BLE resources if needed
     if (pScan) {
         pScan->stop();
     }
-    // Close preferences
     preferences.end();
 }
 
 void BLEKeyboard::tick() {
-    // Call the existing tick logic
-    /** Loop here until we find a device we want to connect to */
     if (doConnect) {
         doConnect = false;
-        /** Found a device we want to connect to, do it now */
         if (connectToServer()) {
             ESP_LOGI(TAG, "Success! we should now be getting notifications, no scanning for more!");
         } else {
             ESP_LOGW(TAG, "Failed to connect, no starting scan");
         }
     }
-    if (toKeyboardSettings) {
-        ESP_LOGI(TAG, "BLE disconnected - triggering keyboard settings screen");
-        toKeyboardSettings = false;
-        // Actually trigger the keyboard settings state transition
-        StateManager::instance().requestKeyboardSettings();
-    }
 }
 
 bool BLEKeyboard::isReady() const { return isConnected(); }
 
 void BLEKeyboard::begin(uint32_t scanRestartIntervalMs) {
-    // Store the scan restart interval
     this->scanRestartIntervalMs = scanRestartIntervalMs;
-    // Initialize Preferences to access NVS (Non-Volatile Storage) - close first if already open
     preferences.end();
     if (!preferences.begin("ble_config", false)) {
         ESP_LOGE(TAG, "Failed to open preferences");
     } else {
         ESP_LOGI(TAG, "Preferences initialized successfully");
     }
-
     ESP_LOGI(TAG, "Starting NimBLE Client");
-
-    /** Initialize NimBLE and set the device name */
     NimBLEDevice::init("NimBLE-Client");
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_NO_INPUT_OUTPUT);
-
     NimBLEDevice::setSecurityAuth(true, false, true);
-
-    /** Optional: set the transmit power */
     NimBLEDevice::setPower(powerLevel);
     pScan = NimBLEDevice::getScan();
-
-    /** Set the callbacks to call when scan events occur, no duplicates */
     pScan->setScanCallbacks(scanCallbacks, false);
-
-    /** Set scan interval (how often) and window (how long) in milliseconds */
     pScan->setInterval(100);
     pScan->setWindow(100);
-
-    /**
-     * Active scan will gather scan response data from advertisers
-     *  but will use more energy from both devices
-     */
     pScan->setActiveScan(true);
-
-    /** Start scanning for advertisers */
     pScan->start(scanTimeMs);
-    ESP_LOGI(TAG, "Scanning for peripherals");
+    ESP_LOGI(TAG, "Scanning for keyboard. Please press any key on the keyboard to wake it up.");
 }
 
-// tick() method is now implemented above in the DriverInterface section
-
 void BLEKeyboard::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
-    // std::string str = (isNotify == true) ? "Notification" : "Indication";
-    // str += " from ";
-    // str += pRemoteCharacteristic->getClient()->getPeerAddress().toString();
-    // str += ": Service = " + pRemoteCharacteristic->getRemoteService()->getUUID().toString();
-    // str += ", Characteristic = " + pRemoteCharacteristic->getUUID().toString();
-    // str += ", Handle = " + std::to_string(pRemoteCharacteristic->getHandle());
-    // str += ", Value = " + std::string((char *)pData, length);
-    // Serial.printf("%s\n", str.c_str());
-
-    // Parse BLE keyboard data and call callback if set
     if (length >= 3) {
-        // BLE keyboard reports: [modifiers, reserved, key1, key2, key3, key4, key5, key6]
         ESP_LOGD("keypress", "BLE keyboard report: %d, %d, %d, %d, %d, %d, %d, %d", pData[0], pData[1], pData[2], pData[3], pData[4], pData[5],
                  pData[6], pData[7]);
         uint8_t modifiers = pData[0];
         uint8_t key1 = pData[2];
-
-        if (key1 != 0x00) { // Key pressed
+        if (key1 != 0x00) {
             if (keyboardInstance && keyboardInstance->keyCallback) {
                 char key1_char = keyboardInstance->convertKeyCodeToChar(key1, modifiers);
                 keyboardInstance->keyCallback(key1_char, key1, modifiers);
@@ -208,14 +133,7 @@ void BLEKeyboard::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, ui
 
 bool BLEKeyboard::connectToServer() {
     NimBLEClient *pClient = nullptr;
-
-    /** Check if we have a client we should reuse first **/
     if (NimBLEDevice::getCreatedClientCount()) {
-        /**
-         *  Special case when we already know this device, we send false as the
-         *  second argument in connect() to prevent refreshing the service database.
-         *  This saves considerable time and power.
-         */
         pClient = NimBLEDevice::getClientByPeerAddress(advDevice->getAddress());
         if (pClient) {
             if (!pClient->connect(advDevice, false)) {
@@ -224,59 +142,33 @@ bool BLEKeyboard::connectToServer() {
             }
             ESP_LOGI(TAG, "Reconnected client");
         } else {
-            /**
-             *  We don't already have a client that knows this device,
-             *  check for a client that is disconnected that we can use.
-             */
             pClient = NimBLEDevice::getDisconnectedClient();
         }
     }
-
-    /** No client to reuse? Create a new one. */
     if (!pClient) {
         if (NimBLEDevice::getCreatedClientCount() >= NIMBLE_MAX_CONNECTIONS) {
             ESP_LOGE(TAG, "Max clients reached - no more connections available");
             return false;
         }
-
         pClient = NimBLEDevice::createClient();
-
         ESP_LOGI(TAG, "New client created");
-
         pClient->setClientCallbacks(clientCallbacks, false);
-        /**
-         *  Set initial connection parameters:
-         *  These settings are safe for 3 clients to connect reliably, can go faster
-         * if you have less connections. Timeout should be a multiple of the
-         * interval, minimum is 100ms. Min interval: 12 * 1.25ms = 15, Max interval:
-         * 12 * 1.25ms = 15, 0 latency, 150 * 10ms = 1500ms timeout
-         */
         pClient->setConnectionParams(12, 12, 0, 150);
-
-        /** Set how long we are willing to wait for the connection to complete
-         * (milliseconds), default is 30000. */
         pClient->setConnectTimeout(5 * 1000);
-
         if (!pClient->connect(advDevice)) {
-            /** Created a client but failed to connect, don't need to keep it as it
-             * has no data */
             NimBLEDevice::deleteClient(pClient);
             ESP_LOGW(TAG, "Failed to connect, deleted client");
             return false;
         }
     }
-
     if (!pClient->isConnected()) {
         if (!pClient->connect(advDevice)) {
             ESP_LOGW(TAG, "Failed to connect");
             return false;
         }
     }
-
     ESP_LOGI(TAG, "Connected to: %s RSSI: %d", pClient->getPeerAddress().toString().c_str(), pClient->getRssi());
-
     NimBLERemoteService *pSvc = nullptr;
-
     pSvc = pClient->getService(BLE_SERVICE_UUID);
     if (pSvc) {
         std::vector<NimBLERemoteCharacteristic *> pChars = pSvc->getCharacteristics(true);
@@ -289,129 +181,126 @@ bool BLEKeyboard::connectToServer() {
     } else {
         ESP_LOGW(TAG, "%s service not found.", BLE_SERVICE_UUID);
     }
-
     ESP_LOGI(TAG, "Done with this device!");
     return true;
 }
 
-// Helper function to convert key codes to characters
 char BLEKeyboard::convertKeyCodeToChar(uint8_t keyCode, uint8_t modifiers) {
-    bool shift = (modifiers & 0x02) != 0; // Left shift
-    bool caps = (modifiers & 0x02) != 0;  // Caps lock
-
+    bool shift = (modifiers & 0x02) != 0;
+    bool caps = (modifiers & 0x02) != 0;
     switch (keyCode) {
     case 0x04:
-        return shift ? 'A' : 'a'; // A
+        return shift ? 'A' : 'a';
     case 0x05:
-        return shift ? 'B' : 'b'; // B
+        return shift ? 'B' : 'b';
     case 0x06:
-        return shift ? 'C' : 'c'; // C
+        return shift ? 'C' : 'c';
     case 0x07:
-        return shift ? 'D' : 'd'; // D
+        return shift ? 'D' : 'd';
     case 0x08:
-        return shift ? 'E' : 'e'; // E
+        return shift ? 'E' : 'e';
     case 0x09:
-        return shift ? 'F' : 'f'; // F
+        return shift ? 'F' : 'f';
     case 0x0A:
-        return shift ? 'G' : 'g'; // G
+        return shift ? 'G' : 'g';
     case 0x0B:
-        return shift ? 'H' : 'h'; // H
+        return shift ? 'H' : 'h';
     case 0x0C:
-        return shift ? 'I' : 'i'; // I
+        return shift ? 'I' : 'i';
     case 0x0D:
-        return shift ? 'J' : 'j'; // J
+        return shift ? 'J' : 'j';
     case 0x0E:
-        return shift ? 'K' : 'k'; // K
+        return shift ? 'K' : 'k';
     case 0x0F:
-        return shift ? 'L' : 'l'; // L
+        return shift ? 'L' : 'l';
     case 0x10:
-        return shift ? 'M' : 'm'; // M
+        return shift ? 'M' : 'm';
     case 0x11:
-        return shift ? 'N' : 'n'; // N
+        return shift ? 'N' : 'n';
     case 0x12:
-        return shift ? 'O' : 'o'; // O
+        return shift ? 'O' : 'o';
     case 0x13:
-        return shift ? 'P' : 'p'; // P
+        return shift ? 'P' : 'p';
     case 0x14:
-        return shift ? 'Q' : 'q'; // Q
+        return shift ? 'Q' : 'q';
     case 0x15:
-        return shift ? 'R' : 'r'; // R
+        return shift ? 'R' : 'r';
     case 0x16:
-        return shift ? 'S' : 's'; // S
+        return shift ? 'S' : 's';
     case 0x17:
-        return shift ? 'T' : 't'; // T
+        return shift ? 'T' : 't';
     case 0x18:
-        return shift ? 'U' : 'u'; // U
+        return shift ? 'U' : 'u';
     case 0x19:
-        return shift ? 'V' : 'v'; // V
+        return shift ? 'V' : 'v';
     case 0x1A:
-        return shift ? 'W' : 'w'; // W
+        return shift ? 'W' : 'w';
     case 0x1B:
-        return shift ? 'X' : 'x'; // X
+        return shift ? 'X' : 'x';
     case 0x1C:
-        return shift ? 'Y' : 'y'; // Y
+        return shift ? 'Y' : 'y';
     case 0x1D:
-        return shift ? 'Z' : 'z'; // Z
+        return shift ? 'Z' : 'z';
     case 0x1E:
-        return shift ? '!' : '1'; // 1
+        return shift ? '!' : '1';
     case 0x1F:
-        return shift ? '@' : '2'; // 2
+        return shift ? '@' : '2';
     case 0x20:
-        return shift ? '#' : '3'; // 3
+        return shift ? '#' : '3';
     case 0x21:
-        return shift ? '$' : '4'; // 4
+        return shift ? '$' : '4';
     case 0x22:
-        return shift ? '%' : '5'; // 5
+        return shift ? '%' : '5';
     case 0x23:
-        return shift ? '^' : '6'; // 6
+        return shift ? '^' : '6';
     case 0x24:
-        return shift ? '&' : '7'; // 7
+        return shift ? '&' : '7';
     case 0x25:
-        return shift ? '*' : '8'; // 8
+        return shift ? '*' : '8';
     case 0x26:
-        return shift ? '(' : '9'; // 9
+        return shift ? '(' : '9';
     case 0x27:
-        return shift ? ')' : '0'; // 0
+        return shift ? ')' : '0';
     case 0x28:
-        return '\n'; // Enter
+        return '\n';
     case 0x29:
-        return 0x08; // Escape
+        return 0x08;
     case 0x2A:
-        return 0x08; // Backspace
+        return 0x08;
     case 0x2B:
-        return '\t'; // Tab
+        return '\t';
     case 0x2C:
-        return ' '; // Space
+        return ' ';
     case 0x2D:
-        return shift ? '_' : '-'; // -
+        return shift ? '_' : '-';
     case 0x2E:
-        return shift ? '+' : '='; // =
+        return shift ? '+' : '=';
     case 0x2F:
-        return shift ? '{' : '['; // [
+        return shift ? '{' : '[';
     case 0x30:
-        return shift ? '}' : ']'; // ]
+        return shift ? '}' : ']';
     case 0x31:
-        return shift ? '|' : '\\'; // \
-        case 0x32: return shift ? '~' : '`'; // `
+        return shift ? '|' : '\\';
+    case 0x32:
+        return shift ? '~' : '`';
     case 0x33:
-        return shift ? ':' : ';'; // ;
+        return shift ? ':' : ';';
     case 0x34:
-        return shift ? '"' : '\''; // '
+        return shift ? '"' : '\'';
     case 0x35:
-        return shift ? '~' : '`'; // `
+        return shift ? '~' : '`';
     case 0x36:
-        return shift ? '<' : ','; // ,
+        return shift ? '<' : ',';
     case 0x37:
-        return shift ? '>' : '.'; // .
+        return shift ? '>' : '.';
     case 0x38:
-        return shift ? '?' : '/'; // /
+        return shift ? '?' : '/';
     default:
-        return 0; // Unknown key
+        return 0;
     }
 }
 
 bool BLEKeyboard::isConnected() const {
-    // Check if we have a connected client for our advertised device
     ESP_LOGD(TAG, "advDevice: %p", advDevice);
     delay(100);
     if (advDevice) {
@@ -420,16 +309,12 @@ bool BLEKeyboard::isConnected() const {
             return true;
         }
     }
-
     return false;
 }
 
 void BLEKeyboard::startScan() {
     ESP_LOGI(TAG, "Starting BLE scan...");
-    
-    // Clear previous scan results
     discoveredDevices.clear();
-    
     if (pScan) {
         pScan->start(scanTimeMs, false, true);
     } else {
@@ -440,30 +325,24 @@ void BLEKeyboard::startScan() {
 std::vector<String> BLEKeyboard::getDiscoveredDevices() {
     std::vector<String> deviceNames;
     for (const auto& device : discoveredDevices) {
-        deviceNames.push_back(device.first); // device name
+        deviceNames.push_back(device.first);
     }
     return deviceNames;
 }
 
 bool BLEKeyboard::connectToDevice(const String& deviceName) {
     ESP_LOGI(TAG, "Attempting to connect to device: %s", deviceName.c_str());
-    
-    // Find the device in our discovered devices list
     for (const auto& device : discoveredDevices) {
         if (device.first == deviceName) {
             ESP_LOGI(TAG, "Found device %s with address %s", device.first.c_str(), device.second.c_str());
-            
-            // Save the address for connection
             preferences.putString("addr", device.second);
-            
-            // Set up for connection
             doConnect = true;
-            advDevice = nullptr; // Will be set when we find the device again
-            
+            advDevice = nullptr;
             return true;
         }
     }
-    
     ESP_LOGW(TAG, "Device %s not found in discovered devices", deviceName.c_str());
     return false;
 }
+
+

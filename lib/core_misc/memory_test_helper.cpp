@@ -24,28 +24,28 @@ bool checkForMemoryLeaks(const char* testName,
         return false;
     }
     
-    // Calculate memory loss
-    uint32_t heapLoss = initialState->freeHeap - currentState->freeHeap;
-    uint32_t psramLoss = initialState->freePsram - currentState->freePsram;
+    // Calculate signed memory delta (positive => loss, negative => gain)
+    int32_t heapDelta = static_cast<int32_t>(initialState->freeHeap) - static_cast<int32_t>(currentState->freeHeap);
+    int32_t psramDelta = static_cast<int32_t>(initialState->freePsram) - static_cast<int32_t>(currentState->freePsram);
     
     // Log memory status
     ESP_LOGI("MemoryTest", "=== Memory Check for %s ===", testName ? testName : "test");
-    ESP_LOGI("MemoryTest", "Heap: %u -> %u (loss: %u bytes)", 
-             initialState->freeHeap, currentState->freeHeap, heapLoss);
-    ESP_LOGI("MemoryTest", "PSRAM: %u -> %u (loss: %u bytes)", 
-             initialState->freePsram, currentState->freePsram, psramLoss);
+    ESP_LOGI("MemoryTest", "Heap: %u -> %u (delta: %d bytes)", 
+             initialState->freeHeap, currentState->freeHeap, heapDelta);
+    ESP_LOGI("MemoryTest", "PSRAM: %u -> %u (delta: %d bytes)", 
+             initialState->freePsram, currentState->freePsram, psramDelta);
     ESP_LOGI("MemoryTest", "Min Free Heap: %u -> %u", 
              initialState->minFreeHeap, currentState->minFreeHeap);
     
     // Check for significant memory leaks
     bool hasLeaks = false;
-    if (heapLoss > threshold) {
-        ESP_LOGW("MemoryTest", "WARNING: Potential heap memory leak detected! Loss: %u bytes", heapLoss);
+    if (heapDelta > static_cast<int32_t>(threshold)) {
+        ESP_LOGWx("MemoryTest", "WARNING: Potential heap memory leak detected! Loss: %d bytes", heapDelta);
         hasLeaks = true;
     }
     
-    if (psramLoss > threshold) {
-        ESP_LOGW("MemoryTest", "WARNING: Potential PSRAM leak detected! Loss: %u bytes", psramLoss);
+    if (psramDelta > static_cast<int32_t>(threshold)) {
+        ESP_LOGWx("MemoryTest", "WARNING: Potential PSRAM leak detected! Loss: %d bytes", psramDelta);
         hasLeaks = true;
     }
     
@@ -61,23 +61,23 @@ bool checkMemoryUsage(const char* testName,
     uint32_t currentHeap = ESP.getFreeHeap();
     uint32_t currentPsram = ESP.getFreePsram();
     
-    uint32_t heapLoss = initialHeap - currentHeap;
-    uint32_t psramLoss = initialPsram - currentPsram;
+    int32_t heapDelta = static_cast<int32_t>(initialHeap) - static_cast<int32_t>(currentHeap);
+    int32_t psramDelta = static_cast<int32_t>(initialPsram) - static_cast<int32_t>(currentPsram);
     
     ESP_LOGI("MemoryTest", "[%s] Memory: Heap %u->%u (%d), PSRAM %u->%u (%d)", 
              testName ? testName : "test", 
-             initialHeap, currentHeap, heapLoss, 
-             initialPsram, currentPsram, psramLoss);
+             initialHeap, currentHeap, heapDelta, 
+             initialPsram, currentPsram, psramDelta);
     
     // Check for significant memory leaks
     bool hasLeaks = false;
-    if (heapLoss > threshold) {
-        ESP_LOGW("MemoryTest", "WARNING: Heap memory leak detected! Loss: %u bytes", heapLoss);
+    if (heapDelta > static_cast<int32_t>(threshold)) {
+        ESP_LOGW("MemoryTest", "WARNING: Heap memory leak detected! Loss: %d bytes", heapDelta);
         hasLeaks = true;
     }
     
-    if (psramLoss > threshold) {
-        ESP_LOGW("MemoryTest", "WARNING: PSRAM leak detected! Loss: %u bytes", psramLoss);
+    if (psramDelta > static_cast<int32_t>(threshold)) {
+        ESP_LOGW("MemoryTest", "WARNING: PSRAM leak detected! Loss: %d bytes", psramDelta);
         hasLeaks = true;
     }
     

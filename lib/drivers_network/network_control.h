@@ -5,16 +5,16 @@
 #include <WiFiClientSecure.h>
 #include <Preferences.h>
 #include <vector>
-#include "core/driver_interface.h"
+#include <functional>
 
 /**
- * WiFiControl Class
+ * NetworkControl Class
  * 
  * This class handles WiFi connection and credential management.
  * UI operations are handled by WiFiSettingsController.
  * 
  * Usage:
- * 1. Create a WiFiControl instance: WiFiControl wifi;
+ * 1. Create a NetworkControl instance: NetworkControl wifi;
  * 2. Call wifi.begin() - this will try to connect using saved credentials
  * 3. Call wifi.tick() in your main loop for connection monitoring
  * 4. Use wifi.connectToNetwork() for manual connections
@@ -25,16 +25,16 @@
  * - Simple API: wifi.begin(), wifi.tick(), wifi.isConnected(), wifi.getIP()
  */
 
-class WiFiControl : public DriverInterface {
+class NetworkControl {
 public:
-    WiFiControl();
-    ~WiFiControl();
+    NetworkControl();
+    ~NetworkControl();
     
-    // DriverInterface implementation
-    bool initialize() override;
-    void shutdown() override;
-    void tick() override;
-    bool isReady() const override;
+    // Lifecycle
+    bool initialize();
+    void shutdown();
+    void tick();
+    bool isReady() const;
     
     // Main entry point - tries saved credentials first, falls back to UI
     bool begin();
@@ -62,9 +62,16 @@ public:
     
     // Scan for available networks (returns list of SSIDs)
     std::vector<String> scanNetworks();
-    
-    // HTTP POST method
-    void POST(const String& url, const String& body);
+
+    // Check if valid saved credentials exist in NVS
+    bool hasSavedCredentials() const;
+
+    // Connection callbacks
+    using ConnectedCallback = std::function<void(const IPAddress&)>;
+    using ConnectionFailedCallback = std::function<void()>;
+    void setOnConnected(const ConnectedCallback& cb) { onConnected_ = cb; }
+    void setOnConnectionFailed(const ConnectionFailedCallback& cb) { onConnectionFailed_ = cb; }
+    void randomizeMACAddress();
 
 private:
     Preferences preferences;
@@ -72,9 +79,21 @@ private:
     unsigned long lastConnectionCheck;
     unsigned long lastDisconnectionTime;
     bool wasConnected;
+    // Pending credentials to persist on successful connection
+    String pendingSsid_;
+    String pendingPassword_;
+    // Connection attempt tracking
+    bool connectionAttemptInProgress_ = false;
+    unsigned long connectionStartTime_ = 0;
+    unsigned long connectionTimeoutMs_ = 10000;
+    // Callbacks
+    ConnectedCallback onConnected_{};
+    ConnectionFailedCallback onConnectionFailed_{};
     NetworkClientSecure client;
     HTTPClient https;
 
     // Try to connect using saved credentials
     bool connectWithSavedCredentials();
 };
+
+

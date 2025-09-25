@@ -5,7 +5,7 @@
 #include "screens/keyboard_settings_screen.h"
 #include "drivers/display_manager.h"
 #include "audio_manager.h"
-#include "drivers/wifi_control.h"
+#include "network_control.h"
 #include "drivers/ble_keyboard.h"
 #include "core/log.h"
 #include <memory>
@@ -306,7 +306,7 @@ bool App::initializeDrivers(bool onlyInitializeDisplay) {
     }
     
     // 2. WiFi driver - needed for audio streaming
-    wifiDriver_ = std::make_unique<WiFiControl>();
+    wifiDriver_ = std::make_unique<NetworkControl>();
     if (!wifiDriver_->initialize()) {
         ESP_LOGE(TAG, "Failed to initialize WiFi driver");
         return false;

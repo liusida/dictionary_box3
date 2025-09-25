@@ -1,12 +1,12 @@
 #include "splash_screen.h"
 #include "drivers/lvgl_drive.h"
-#include "drivers/wifi_control.h"
+#include "network_control.h"
 #include "drivers/ble_keyboard.h"
 #include "core/log.h"
 
 static const char* TAG = "SplashScreen";
 
-SplashScreen::SplashScreen(WiFiControl* wifiDriver, BLEKeyboard* bleDriver) 
+SplashScreen::SplashScreen(NetworkControl* wifiDriver, BLEKeyboard* bleDriver) 
     : wifiDriver_(wifiDriver), bleDriver_(bleDriver),
       initialized_(false), 
       splashStartTime_(0), 
