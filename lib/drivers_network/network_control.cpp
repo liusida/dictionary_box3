@@ -8,6 +8,8 @@
 #include "esp_wifi.h"
 #include "esp_system.h"  // for esp_random
 
+namespace dict {
+
 static const char *TAG = "WiFi";
 
 // point to the file specified in platformio.ini
@@ -315,3 +317,5 @@ void NetworkControl::tick() {
         }
     }
 }
+
+} // namespace dict

@@ -6,7 +6,7 @@
 #undef word
 #endif
 
-namespace core { namespace eventing {
+namespace dict {
 
 // Key events
 struct KeyEvent {
@@ -150,4 +150,4 @@ struct UIEvent {
         : type(t), screenName(screen), inputText(input), buttonName(button), timestamp(millis()) {}
 };
 
-}} // namespace core::eventing
+} // namespace dict

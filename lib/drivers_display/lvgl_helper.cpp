@@ -4,6 +4,8 @@
 #include "events.h"
 #include "log.h"
 
+namespace dict {
+
 lv_group_t *getDefaultGroup() {
     lv_group_t *default_group = lv_group_get_default();
     if (default_group == nullptr) {
@@ -69,11 +71,13 @@ void lvglSetKeyCallbacks(void (*onSubmit)(), void (*onKeyIn)(char)) {
 }
 
 void lvglRemoveKeyEventHandler() {
-    auto& bus = core::eventing::EventSystem::instance().getEventBus<core::eventing::KeyEvent>();
+    auto& bus = EventSystem::instance().getEventBus<KeyEvent>();
     bus.unsubscribe(s_keyListenerId);
     s_keyListenerId = 0;
     s_onSubmit = nullptr;
     s_onKeyIn = nullptr;
 }
+
+} // namespace dict
 
 

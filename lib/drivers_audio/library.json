@@ -1,25 +1,15 @@
 {
   "name": "drivers_audio",
-  "version": "1.0.0",
-  "description": "Audio driver library for ESP32 dictionary project",
-  "keywords": [
-    "audio",
-    "esp32",
-    "mp3",
-    "i2s",
-    "es8311"
-  ],
+  "version": "0.1.0",
+  "description": "Audio driver for ESP32 with ES8311 codec and MP3 support",
+  "keywords": ["audio", "esp32", "mp3", "i2s", "es8311", "sound"],
   "authors": [
-    { "name": "Dictionary Project Team" }
+    { "name": "Dictionary_v2" }
   ],
   "license": "MIT",
   "frameworks": ["arduino"],
   "platforms": ["espressif32"],
   "dependencies": [
     { "name": "core_eventing", "version": ">=0.1.0" }
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/your-repo/dictionary-v2"
-  }
+  ]
 }

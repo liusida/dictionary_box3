@@ -4,6 +4,8 @@
 #include "memory_test_helper.h"
 #include "network_control.h"
 
+using namespace dict;
+
 #define TAG "NetworkControlTest"
 
 static void clearAll(NetworkControl &nc) {

@@ -3,6 +3,8 @@
 #include "../core_eventing/event_publisher.h"
 #include "../core_log/log.h"
 
+namespace dict {
+
 static const char *TAG = "AudioManager";
 // Route allocations > 256 bytes to PSRAM if available
 static MemoryManager s_audioMem(256);
@@ -389,3 +391,5 @@ void AudioManager::processAudio() {
         }
     }
 }
+
+} // namespace dict

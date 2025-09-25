@@ -1,23 +1,3 @@
-/**
- * @file audio_source_littlefs_mounted.h
- * @brief Custom AudioSource for already-mounted LittleFS filesystem
- * 
- * This header provides AudioSourceLittleFSMounted, a custom AudioSource implementation
- * that works with LittleFS filesystems that have already been mounted by the system.
- * 
- * Problem solved:
- * - AudioSourceLittleFS tries to mount LittleFS with default "spiffs" partition
- * - Our system mounts LittleFS with "littlefs" partition name
- * - This causes "partition spiffs could not be found" errors
- * 
- * Solution:
- * - AudioSourceLittleFSMounted uses already-mounted LittleFS directly
- * - No mounting conflicts or partition name issues
- * - Compatible with AudioPlayer and AudioTools library
- * 
- * @author Custom implementation for Dictionary_v2 project
- */
-
 #pragma once
 
 #include "AudioTools.h"

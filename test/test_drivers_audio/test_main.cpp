@@ -5,6 +5,8 @@
 #include "LittleFS.h"
 #include "i2c_manager.h"
 
+using namespace dict;
+
 // What are tested here:
 // test_audio.cpp
 // Initialize: audio manager initializes and reports ready.

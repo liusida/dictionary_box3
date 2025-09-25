@@ -3,6 +3,8 @@
 #include "display_helper.h"
 #include "log.h"
 
+namespace dict {
+
 static const char *TAG = "DisplayManager";
 
 DisplayManager::DisplayManager() 
@@ -284,5 +286,7 @@ void DisplayManager::touchpadReadCallback(lv_indev_t *indev_driver, lv_indev_dat
 uint32_t DisplayManager::tickCallback() {
     return millis();
 }
+
+} // namespace dict
 
 

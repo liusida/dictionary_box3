@@ -1,5 +1,4 @@
-#ifndef AUDIO_MANAGER_H
-#define AUDIO_MANAGER_H
+#pragma once
 
 #define HELIX_LOG_LEVEL LogLevelHelix::Warning
 
@@ -19,6 +18,8 @@
 #include "event_publisher.h"
 #include "events.h"
 
+namespace dict {
+
 class EncodedAudioStreamPatch : public EncodedAudioStream {
 // we use this patch class to modify the protected enc_out. once the issue is resovled, we can remove this class.
 // https://github.com/pschatzmann/arduino-audio-tools/issues/2165
@@ -30,7 +31,6 @@ public:
     }
     
     bool begin() override {
-        // is_output_notify = false;
         setupReader();
         ReformatBaseStream::begin();
         LOGD("Fix the bug: Here info has sample_rate %d, audioInfo() has sample_rate %d, but enc_out.info has sample_rate %d.", info.sample_rate, audioInfo().sample_rate, enc_out.audioInfo().sample_rate);
@@ -39,6 +39,27 @@ public:
 };
 
 class AudioManager {
+public:
+    // Constructor/Destructor
+    AudioManager();
+    ~AudioManager();
+    
+    // Core lifecycle methods
+    bool initialize(); // Initialize audio system and ES8311 codec
+    void shutdown(); // Clean shutdown of audio system and free resources
+    void tick(); // Process audio events and state updates
+    bool isReady() const; // Check if audio system is ready for playback
+    
+    // Audio playback methods
+    bool play(const char* url); // Play audio from URL or local file path
+    bool stop(); // Stop current audio playback
+    
+    // Utility/getter methods
+    bool isCurrentlyPlaying() const { return isPlaying && !isPaused; } // Check if audio is currently playing
+    bool isCurrentlyPaused() const { return isPaused; } // Check if audio is paused
+    String getCurrentUrl() const { return currentUrl; } // Get current audio URL/file path
+    void setVolume(float volume); // Set audio volume (0.0 to 1.0)
+
 private:
     // Audio board and output (ES8311)
     AudioBoard board;
@@ -75,28 +96,7 @@ private:
     // Private methods
     static void audioTask(void* parameter);
     void processAudio();
-    
-public:
-    AudioManager();
-    ~AudioManager();
-    
-    // Audio management methods
-    bool initialize();
-    void shutdown();
-    void tick();
-    bool isReady() const;
-    
-    
-    // Audio playback methods
-    bool play(const char* url);
-    bool stop();
-    
-    // Utility methods
-    bool isCurrentlyPlaying() const { return isPlaying && !isPaused; }
-    bool isCurrentlyPaused() const { return isPaused; }
-    String getCurrentUrl() const { return currentUrl; }
-    void setVolume(float volume);
 
 };
 
-#endif // AUDIO_MANAGER_H
+} // namespace dict

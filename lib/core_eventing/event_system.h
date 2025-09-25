@@ -6,7 +6,7 @@
 #include <mutex>
 #include "events.h"
 
-namespace core { namespace eventing {
+namespace dict {
 
 /**
  * @brief Simple event bus for decoupled communication between modules
@@ -140,4 +140,4 @@ extern template EventBus<WiFiEvent>& EventSystem::getEventBus<WiFiEvent>();
 extern template EventBus<AppStateEvent>& EventSystem::getEventBus<AppStateEvent>();
 extern template EventBus<UIEvent>& EventSystem::getEventBus<UIEvent>();
 
-}} // namespace core::eventing
+} // namespace dict

@@ -2,6 +2,8 @@
 
 #include <Arduino.h>
 
+namespace dict {
+
 /**
  * @brief Print detailed memory status information to Serial
  * 
@@ -13,5 +15,7 @@
 void printMemoryStatus();
 
 // Display reset utility moved to drivers_display/display_utils.h
+
+} // namespace dict
 
 

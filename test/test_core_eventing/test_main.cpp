@@ -1,9 +1,11 @@
 #include <Arduino.h>
 #include <unity.h>
-// Use the core_eventing library headers (with namespace core::eventing)
+// Use the core_eventing library headers (with namespace dict)
 #include "event_system.h"
 #include "events.h"
 #include "event_publisher.h"
+
+using namespace dict;
 
 // What are tested here:
 // EventBus basics: subscribe/publish queues delivery; processEvents() delivers correct payload.
@@ -22,15 +24,15 @@ void test_eventsystem_process_all_events_multiple_types(void);
 void test_eventpublisher_routing(void);
 
 
-using core::eventing::EventBus;
-using core::eventing::EventSystem;
-using core::eventing::EventPublisher;
-using core::eventing::AppStateEvent;
-using core::eventing::AudioEvent;
-using core::eventing::WiFiEvent;
-using core::eventing::BLEEvent;
-using core::eventing::DictionaryEvent;
-using core::eventing::UIEvent;
+using EventBus;
+using EventSystem;
+using EventPublisher;
+using AppStateEvent;
+using AudioEvent;
+using WiFiEvent;
+using BLEEvent;
+using DictionaryEvent;
+using UIEvent;
 
 static bool received_flag = false;
 static int received_value = -1;

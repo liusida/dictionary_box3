@@ -2,6 +2,8 @@
 #include <unity.h>
 #include "memory_test_helper.h"
 
+using namespace dict;
+
 void test_ble_keyboard_init_and_shutdown(void);
 
 #define TAG "BLEKeyboardTest"

@@ -1,6 +1,8 @@
 #include "utils.h"
 #include "log.h"
 
+namespace dict {
+
 void printMemoryStatus() {
   // Internal RAM (SRAM) information
   uint32_t freeHeap = ESP.getFreeHeap();
@@ -36,5 +38,7 @@ void printMemoryStatus() {
   ESP_LOGI("Utils", "Flash Size: %u bytes (%.2f MB)", ESP.getFlashChipSize(), ESP.getFlashChipSize() / (1024.0 * 1024.0));
   ESP_LOGI("Utils", "===================");
 }
+
+} // namespace dict
 
 

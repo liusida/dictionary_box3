@@ -1,8 +1,8 @@
 {
   "name": "drivers_network",
   "version": "0.1.0",
-  "description": "Network (WiFi/HTTPS) control library for ESP32 dictionary project",
-  "keywords": ["wifi", "network", "https", "esp32"],
+  "description": "WiFi and HTTPS network control for ESP32",
+  "keywords": ["wifi", "network", "https", "esp32", "connectivity"],
   "authors": [
     { "name": "Dictionary_v2" }
   ],

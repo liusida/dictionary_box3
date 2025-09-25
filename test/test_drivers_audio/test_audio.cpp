@@ -5,6 +5,8 @@
 #include "LittleFS.h"
 #include <WiFi.h>
 
+using namespace dict;
+
 // =================================== TESTS ===================================
 
 void test_audio_initialize_and_ready(void) {

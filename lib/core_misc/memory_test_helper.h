@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <unity.h>
 
+namespace dict {
+
 /**
  * @brief Memory leak detection helper for Unity tests
  * 
@@ -116,3 +118,5 @@ void printTestSuiteMemorySummary(const char* suiteName, bool isStart);
             ESP_LOGE(tag, "Memory leak detected in %s test", #test_function); \
         } \
     } while(0)
+
+} // namespace dict

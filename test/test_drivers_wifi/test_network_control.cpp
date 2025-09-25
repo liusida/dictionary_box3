@@ -5,6 +5,8 @@
 #include "network_control.h"
 #include "test_wifi_credentials.h"
 
+using namespace dict;
+
 #define TAG "NetworkControlConnectTest"
 
 #define WIFI_SSID TEST_WIFI_SSID

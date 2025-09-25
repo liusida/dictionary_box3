@@ -1,8 +1,8 @@
 {
   "name": "core_eventing",
   "version": "0.1.0",
-  "description": "Typed event bus, event system, and publisher under core::eventing namespace.",
-  "keywords": ["event", "bus", "pubsub"],
+  "description": "Typed event bus and publisher system for ESP32",
+  "keywords": ["event", "bus", "pubsub", "messaging"],
   "authors": [
     { "name": "Dictionary_v2" }
   ],
@@ -13,5 +13,3 @@
     { "name": "core_log", "version": ">=0.1.0" }
   ]
 }
-
-

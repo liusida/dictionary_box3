@@ -2,7 +2,7 @@
 #include "event_system.h"
 #include "log.h"
 
-namespace core { namespace eventing {
+namespace dict {
 
 class EventPublisher {
 public:
@@ -20,4 +20,4 @@ private:
     static constexpr const char* TAG = "EventPublisher";
 };
 
-}} // namespace core::eventing
+} // namespace dict

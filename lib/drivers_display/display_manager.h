@@ -4,44 +4,55 @@
 #include "lvgl.h"
 #include "i2c_manager.h"
 
+namespace dict {
+
 class DisplayManager {
 public:
+    // Constructor/Destructor
     DisplayManager();
     ~DisplayManager();
-    
-    bool initialize();
-    void shutdown();
-    void tick();
-    bool isReady() const;
-    
-    void resetDisplay();
-    void setBacklight(bool on);
-    
-    bool initTouch();
-    void handleTouch();
-    
-    void initLVGL();
-    void handleLVGLTasks();
-    
-    TFT_eSPI& getTFT() { return tft_; }
-    GT911& getTouch() { return touch_; }
-    
-    static void dispFlushCallback(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map);
-    static void touchpadReadCallback(lv_indev_t *indev_driver, lv_indev_data_t *data);
-    static uint32_t tickCallback();
-    
+
+    // Core lifecycle methods
+    bool initialize(); // Initialize display, touch controller, and LVGL
+    void shutdown(); // Clean shutdown of display and LVGL resources
+    void tick(); // Process display updates and LVGL tasks
+    bool isReady() const; // Check if display is ready for use
+
+    // Display control methods
+    void resetDisplay(); // Reset display hardware and turn on backlight
+    void setBacklight(bool on); // Control display backlight on/off
+
+    // Touch handling methods
+    bool initTouch(); // Initialize GT911 touch controller
+    void handleTouch(); // Process touch input events
+
+    // LVGL methods
+    void initLVGL(); // Initialize LVGL display and input drivers
+    void handleLVGLTasks(); // Process LVGL tasks and rendering
+
+    // Utility/getter methods
+    TFT_eSPI& getTFT() { return tft_; } // Get TFT display object reference
+    GT911& getTouch() { return touch_; } // Get touch controller object reference
+
+    // Static methods
+    static void dispFlushCallback(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map); // LVGL display flush callback
+    static void touchpadReadCallback(lv_indev_t *indev_driver, lv_indev_data_t *data); // LVGL touch input callback
+    static uint32_t tickCallback(); // LVGL tick callback for timing
+
 private:
     TFT_eSPI tft_;
     GT911 touch_;
     bool displayInitialized_;
     bool touchInitialized_;
     bool lvglInitialized_;
-    
+
     // LVGL objects and buffers
     lv_display_t *display_;
     lv_indev_t *inputDevice_;
     lv_color_t *buffer1_;
     lv_color_t *buffer2_;
 };
+
+} // namespace dict
 
 

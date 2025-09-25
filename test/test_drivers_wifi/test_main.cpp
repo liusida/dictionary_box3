@@ -2,6 +2,8 @@
 #include <unity.h>
 #include "memory_test_helper.h"
 
+using namespace dict;
+
 // What are tested here:
 // test_wifi_basic.cpp
 // Simplest test: just connect to a network and disconnect

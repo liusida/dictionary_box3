@@ -1,8 +1,8 @@
 {
   "name": "drivers_display",
   "version": "0.1.0",
-  "description": "Display and touch driver manager for ESP32-S3 Box (LVGL + TFT_eSPI + GT911)",
-  "keywords": ["display", "lvgl", "tft", "gt911"],
+  "description": "Display and touch driver for ESP32-S3 Box (LVGL + TFT_eSPI + GT911)",
+  "keywords": ["display", "lvgl", "tft", "gt911", "touch"],
   "authors": [
     { "name": "Dictionary_v2" }
   ],
@@ -15,5 +15,3 @@
     { "name": "drivers_i2c", "version": ">=0.1.0" }
   ]
 }
-
-

@@ -1,8 +1,8 @@
 {
   "name": "drivers_i2c",
   "version": "0.1.0",
-  "description": "Shared I2C bus manager",
-  "keywords": ["i2c", "wire"],
+  "description": "Shared I2C bus manager for ESP32",
+  "keywords": ["i2c", "wire", "bus"],
   "authors": [
     { "name": "Dictionary_v2" }
   ],
@@ -13,5 +13,3 @@
     { "name": "core_log", "version": ">=0.1.0" }
   ]
 }
-
-

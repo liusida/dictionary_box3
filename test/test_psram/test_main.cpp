@@ -2,6 +2,8 @@
 #include <unity.h>
 #include "memory_test_helper.h"
 
+using namespace dict;
+
 // PSRAM allocation/deallocation tests
 void test_psram_malloc_free(void);
 void test_psram_malloc_free_large(void);

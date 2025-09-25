@@ -1,8 +1,8 @@
 {
   "name": "core_misc",
   "version": "0.1.0",
-  "description": "Miscellaneous core helpers (utils).",
-  "keywords": ["utils", "helpers"],
+  "description": "Miscellaneous core utilities and helpers for ESP32",
+  "keywords": ["utils", "helpers", "utilities", "core"],
   "authors": [
     { "name": "Dictionary_v2" }
   ],
@@ -13,5 +13,3 @@
     { "name": "core_log", "version": ">=0.1.0" }
   ]
 }
-
-

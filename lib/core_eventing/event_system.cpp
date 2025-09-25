@@ -1,7 +1,7 @@
 #include "event_system.h"
 #include "events.h"
 
-namespace core { namespace eventing {
+namespace dict {
 
 EventSystem& EventSystem::instance() {
     static EventSystem instance;
@@ -27,13 +27,13 @@ void EventSystem::processAllEvents() {
     }
 }
 
-}} // namespace core::eventing
+} // namespace dict
 
 // Explicit template instantiations to ensure one bus per type across TUs
-template core::eventing::EventBus<core::eventing::KeyEvent>& core::eventing::EventSystem::getEventBus<core::eventing::KeyEvent>();
-template core::eventing::EventBus<core::eventing::FunctionKeyEvent>& core::eventing::EventSystem::getEventBus<core::eventing::FunctionKeyEvent>();
-template core::eventing::EventBus<core::eventing::DictionaryEvent>& core::eventing::EventSystem::getEventBus<core::eventing::DictionaryEvent>();
-template core::eventing::EventBus<core::eventing::AudioEvent>& core::eventing::EventSystem::getEventBus<core::eventing::AudioEvent>();
-template core::eventing::EventBus<core::eventing::WiFiEvent>& core::eventing::EventSystem::getEventBus<core::eventing::WiFiEvent>();
-template core::eventing::EventBus<core::eventing::AppStateEvent>& core::eventing::EventSystem::getEventBus<core::eventing::AppStateEvent>();
-template core::eventing::EventBus<core::eventing::UIEvent>& core::eventing::EventSystem::getEventBus<core::eventing::UIEvent>();
+template dict::EventBus<dict::KeyEvent>& dict::EventSystem::getEventBus<dict::KeyEvent>();
+template dict::EventBus<dict::FunctionKeyEvent>& dict::EventSystem::getEventBus<dict::FunctionKeyEvent>();
+template dict::EventBus<dict::DictionaryEvent>& dict::EventSystem::getEventBus<dict::DictionaryEvent>();
+template dict::EventBus<dict::AudioEvent>& dict::EventSystem::getEventBus<dict::AudioEvent>();
+template dict::EventBus<dict::WiFiEvent>& dict::EventSystem::getEventBus<dict::WiFiEvent>();
+template dict::EventBus<dict::AppStateEvent>& dict::EventSystem::getEventBus<dict::AppStateEvent>();
+template dict::EventBus<dict::UIEvent>& dict::EventSystem::getEventBus<dict::UIEvent>();

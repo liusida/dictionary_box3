@@ -1,6 +1,8 @@
 #include "display_helper.h"
 #include "log.h"
 
+namespace dict {
+
 
 void manualResetDisplay() {
   // Configure pins as outputs
@@ -18,3 +20,5 @@ void manualResetDisplay() {
   
   ESP_LOGI("Utils", "Display reset and backlight enabled");
 }
+
+} // namespace dict

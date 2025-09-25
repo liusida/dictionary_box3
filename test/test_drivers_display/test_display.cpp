@@ -2,6 +2,8 @@
 #include <unity.h>
 #include "display_manager.h"
 
+using namespace dict;
+
 // =================================== TESTS ===================================
 void test_display_initialize_and_ready(void) {
   DisplayManager disp;

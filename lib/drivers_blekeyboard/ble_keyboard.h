@@ -8,8 +8,39 @@
 #define BLE_SERVICE_UUID "1812"        // Keyboard Service UUID
 #define BLE_CHARACTERISTIC_UUID "2a4d" // Actually, we subscribe to any characteristic that can notify...
 
+namespace dict {
+
 class BLEKeyboard {
+  public:
+    // Constructor/Destructor
+    BLEKeyboard();
+    ~BLEKeyboard();
+
+    // Core lifecycle methods
+    bool initialize(); // Initialize BLE keyboard connection and scanning
+    void shutdown(); // Clean shutdown of BLE keyboard
+    void tick(); // Process BLE keyboard events and connection state
+    bool isReady() const; // Check if BLE keyboard is ready for use
+
+    // Main functionality methods
+    void begin(uint32_t scanRestartIntervalMs = 0); // Start BLE scanning with optional restart interval
+    void startScan(); // Begin scanning for BLE keyboard devices
+    bool isConnected() const; // Check if connected to a BLE keyboard
+    bool connectToDevice(const String& deviceName); // Connect to specific device by name
+    void setKeyCallback(const KeyCallback& callback) { keyCallback = callback; } // Set callback for key events
+
+    // Utility/getter methods
+    int getPowerLevel() const { return powerLevel; } // Get current BLE power level
+    void setPowerLevel(int level) { powerLevel = level; } // Set BLE power level
+    uint32_t getScanTime() const { return scanTimeMs; } // Get scan duration in milliseconds
+    void setScanTime(uint32_t timeMs) { scanTimeMs = timeMs; } // Set scan duration
+    std::vector<String> getDiscoveredDevices(); // Get list of discovered device names
+
+  protected:
+    std::vector<std::pair<String, String>> discoveredDevices;
+
   private:
+    // Private member variables
     const NimBLEAdvertisedDevice *advDevice;
     bool doConnect;
     int powerLevel;
@@ -27,32 +58,12 @@ class BLEKeyboard {
     using KeyCallback = std::function<void(char key, uint8_t keyCode, uint8_t modifiers)>;
     KeyCallback keyCallback;
 
+    // Private methods
     static void notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify);
     bool connectToServer();
     char convertKeyCodeToChar(uint8_t keyCode, uint8_t modifiers);
-
-  public:
-    BLEKeyboard();
-    ~BLEKeyboard();
-
-    bool initialize();
-    void shutdown();
-    void tick();
-    bool isReady() const;
-    void begin(uint32_t scanRestartIntervalMs = 0);
-    int getPowerLevel() const { return powerLevel; }
-    void setPowerLevel(int level) { powerLevel = level; }
-    uint32_t getScanTime() const { return scanTimeMs; }
-    void setScanTime(uint32_t timeMs) { scanTimeMs = timeMs; }
-    void setKeyCallback(const KeyCallback& callback) { keyCallback = callback; }
-    bool isConnected() const;
-    void startScan();
-    std::vector<String> getDiscoveredDevices();
-    bool connectToDevice(const String& deviceName);
-
-  protected:
-    bool toKeyboardSettings;
-    std::vector<std::pair<String, String>> discoveredDevices;
 };
+
+} // namespace dict
 
 

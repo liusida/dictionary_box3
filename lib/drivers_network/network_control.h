@@ -7,71 +7,44 @@
 #include <vector>
 #include <functional>
 
-/**
- * NetworkControl Class
- * 
- * This class handles WiFi connection and credential management.
- * UI operations are handled by WiFiSettingsController.
- * 
- * Usage:
- * 1. Create a NetworkControl instance: NetworkControl wifi;
- * 2. Call wifi.begin() - this will try to connect using saved credentials
- * 3. Call wifi.tick() in your main loop for connection monitoring
- * 4. Use wifi.connectToNetwork() for manual connections
- * 
- * Features:
- * - Automatic credential storage in NVS flash
- * - Connection status monitoring
- * - Simple API: wifi.begin(), wifi.tick(), wifi.isConnected(), wifi.getIP()
- */
+namespace dict {
 
 class NetworkControl {
 public:
+    // Constructor/Destructor
     NetworkControl();
     ~NetworkControl();
     
-    // Lifecycle
-    bool initialize();
-    void shutdown();
-    void tick();
-    bool isReady() const;
+    // Core lifecycle methods
+    bool initialize(); // Initialize network control (calls begin())
+    void shutdown(); // Clean shutdown of WiFi and clear credentials
+    void tick(); // Monitor connection status and handle reconnection
+    bool isReady() const; // Check if network control is ready
     
     // Main entry point - tries saved credentials first, falls back to UI
-    bool begin();
+    bool begin(); // Start WiFi connection using saved credentials or show UI
     
-    // Check if WiFi is connected
-    bool isConnected();
+    // Connection management methods
+    bool isConnected(); // Check if WiFi is currently connected
+    wl_status_t getStatus(); // Get current WiFi connection status
+    IPAddress getIP(); // Get current IP address
+    bool connectToNetwork(const String& ssid, const String& password); // Connect to specific network
     
-    // Get current WiFi status
-    wl_status_t getStatus();
+    // Credential management methods
+    void saveCredentials(const String& ssid, const String& password); // Save WiFi credentials to NVS
+    bool loadCredentials(String& ssid, String& password); // Load saved credentials from NVS
+    void clearCredentials(); // Clear saved credentials from NVS
+    bool hasSavedCredentials() const; // Check if valid credentials exist in NVS
     
-    // Get IP address
-    IPAddress getIP();
-    
-    // Connect to a specific network (called by controller)
-    bool connectToNetwork(const String& ssid, const String& password);
-    
-    // Save credentials to NVS
-    void saveCredentials(const String& ssid, const String& password);
-    
-    // Load credentials from NVS
-    bool loadCredentials(String& ssid, String& password);
-    
-    // Clear saved credentials
-    void clearCredentials();
-    
-    // Scan for available networks (returns list of SSIDs)
-    std::vector<String> scanNetworks();
-
-    // Check if valid saved credentials exist in NVS
-    bool hasSavedCredentials() const;
+    // Network scanning methods
+    std::vector<String> scanNetworks(); // Scan for available WiFi networks
 
     // Connection callbacks
     using ConnectedCallback = std::function<void(const IPAddress&)>;
     using ConnectionFailedCallback = std::function<void()>;
-    void setOnConnected(const ConnectedCallback& cb) { onConnected_ = cb; }
-    void setOnConnectionFailed(const ConnectionFailedCallback& cb) { onConnectionFailed_ = cb; }
-    void randomizeMACAddress();
+    void setOnConnected(const ConnectedCallback& cb) { onConnected_ = cb; } // Set callback for successful connection
+    void setOnConnectionFailed(const ConnectionFailedCallback& cb) { onConnectionFailed_ = cb; } // Set callback for connection failure
+    void randomizeMACAddress(); // Randomize WiFi MAC address for privacy
 
 private:
     Preferences preferences;
@@ -95,5 +68,7 @@ private:
     // Try to connect using saved credentials
     bool connectWithSavedCredentials();
 };
+
+} // namespace dict
 
 

@@ -2,6 +2,9 @@
 #include <unity.h>
 #include "i2c_manager.h"
 #include "memory_test_helper.h"
+
+using namespace dict;
+
 #define TAG "I2CTest"
 
 // What are tested here:

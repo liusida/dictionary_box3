@@ -2,6 +2,8 @@
 #include "log.h"
 #include "utils.h"
 
+namespace dict {
+
 // Global memory state for Unity setUp/tearDown
 static MemoryState g_initialMemoryState = {0};
 
@@ -106,3 +108,5 @@ void printTestSuiteMemorySummary(const char* suiteName, bool isStart) {
     
     printMemoryStatus();
 }
+
+} // namespace dict

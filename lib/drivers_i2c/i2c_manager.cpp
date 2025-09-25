@@ -1,6 +1,8 @@
 #include "i2c_manager.h"
 #include "pins_arduino.h"
 
+namespace dict {
+
 static const char* TAG = "I2CManager";
 
 I2CManager& I2CManager::instance() {
@@ -55,3 +57,5 @@ void I2CManager::shutdown() {
         ESP_LOGI(TAG, "I2C shutdown");
     }
 }
+
+} // namespace dict

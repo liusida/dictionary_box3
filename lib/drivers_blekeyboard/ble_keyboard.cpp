@@ -1,6 +1,8 @@
 #include "ble_keyboard.h"
 #include "log.h"
 
+namespace dict {
+
 static const char *TAG = "BLE";
 
 class BLEKeyboard::ClientCallbacks : public NimBLEClientCallbacks {
@@ -344,5 +346,7 @@ bool BLEKeyboard::connectToDevice(const String& deviceName) {
     ESP_LOGW(TAG, "Device %s not found in discovered devices", deviceName.c_str());
     return false;
 }
+
+} // namespace dict
 
 

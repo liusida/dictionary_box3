@@ -5,6 +5,8 @@
 #include "lvgl_helper.h"
 #include "event_system.h"
 
+using namespace dict;
+
 #define TAG "BLEKeyboardTest"
 
 void test_ble_keyboard_init_and_shutdown(void) {
@@ -28,7 +30,7 @@ void test_ble_keyboard_init_and_shutdown(void) {
     unsigned long processStart = millis();
     while (millis() - processStart < 2000) { // process for 2s
         kp.tick();
-        core::eventing::EventSystem::instance().processAllEvents();
+        EventSystem::instance().processAllEvents();
         delay(50);
     }
 

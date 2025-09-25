@@ -6,6 +6,8 @@
 #include "memory_test_helper.h"
 #include "lvgl_helper.h"
 
+using namespace dict;
+
 // Helper function to safely cleanup LVGL objects
 void safeCleanupLVGLObjects(lv_obj_t* obj1, lv_obj_t* obj2 = nullptr) {
     if (obj1) {

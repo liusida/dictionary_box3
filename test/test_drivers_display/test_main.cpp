@@ -3,6 +3,8 @@
 #include "display_manager.h"
 #include "memory_test_helper.h"
 
+using namespace dict;
+
 // What are tested here:
 // test_display.cpp
 // Initialize: display manager initializes and reports ready.

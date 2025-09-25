@@ -3,7 +3,7 @@
 #include "lvgl.h"
 #include "utils.h"
 
-using namespace core::eventing;
+namespace dict {
 
 static const char *TAG = "KeyProcessor";
 
@@ -125,5 +125,7 @@ FunctionKeyEvent::Type KeyProcessor::convertKeyCodeToFunction(uint8_t keyCode) {
         default: return FunctionKeyEvent::None;
     }
 }
+
+} // namespace dict
 
 
