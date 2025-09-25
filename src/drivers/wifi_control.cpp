@@ -55,8 +55,13 @@ bool WiFiControl::begin() {
         return true;
     }
     
-    ESP_LOGW(TAG, "Failed to connect with saved credentials");
-    return false;
+    ESP_LOGW(TAG, "No saved credentials found - WiFi driver initialized but not connected");
+    
+    // Publish connection failed event
+    EventPublisher::instance().publishWiFiEvent(WiFiEvent::ConnectionFailed, "", IPAddress(), "No saved credentials found");
+    
+    // Driver initialized successfully, but not connected (following simplified architecture)
+    return true;
 }
 
 bool WiFiControl::connectWithSavedCredentials() {

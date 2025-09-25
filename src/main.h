@@ -1,11 +1,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-// Application states
-enum AppState { STATE_SPLASH, STATE_MAIN, STATE_WIFI_SETTINGS, STATE_KEYBOARD_SETTINGS };
-
-// External state variables (defined in main.cpp)
-extern AppState currentState;
-extern bool stateTransitioned;
+// Application states - now defined in app/state_manager.h
+// This file is kept for backward compatibility but the enum is moved to StateManager
 
 #endif // MAIN_H

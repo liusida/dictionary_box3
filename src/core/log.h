@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Arduino.h>
 #include "esp_log.h"
 
 #define HIGHLIGHT_OUR_OWN_LOGS 0

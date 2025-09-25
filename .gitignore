@@ -1,3 +1,4 @@
 .pio
 .vscode
 logs
+test_wifi_credentials.h

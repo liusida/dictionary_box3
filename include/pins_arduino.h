@@ -9,8 +9,8 @@
 static const uint8_t TX = 43;
 static const uint8_t RX = 44;
 
-static const uint8_t SDA = 8; // GT911 BSP_I2C_SDA
-static const uint8_t SCL = 18; // GT911 BSP_I2C_SCL
+static const uint8_t SDA = 8; //  default SDA
+static const uint8_t SCL = 18; // default SCL
 
 static const uint8_t SS = 10;
 static const uint8_t MOSI = 11;
@@ -31,9 +31,10 @@ static const uint8_t T12 = 12;
 static const uint8_t T13 = 13;
 static const uint8_t T14 = 14;
 
-// Wire1 for ES7210 MIC ADC, ES8311 I2S DAC, ICM-42607-P IMU and TT21100 Touch Panel
-#define I2C_SDA 8
-#define I2C_SCL 18
+// Wire for ES7210 MIC ADC, ES8311 I2S DAC, ICM-42607-P IMU and TT21100 Touch Panel
+#define SHARED_I2C_SDA 8
+#define SHARED_I2C_SCL 18
+#define SHARED_I2C_FREQ 100000 // 100kHz for compatibility
 
 #define ES7210_ADDR    0x40  //MIC ADC
 #define ES8311_ADDR    0x18  //I2S DAC

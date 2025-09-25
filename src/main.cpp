@@ -1,44 +1,40 @@
 #include <Arduino.h>
 
-#include "core/service_manager.h"
-#include "drivers/ble_keyboard.h"
-#include "controllers/app.h"
+#include "app/app.h"
 #include "ui/ui.h"
 #include "core/log.h"
+
 static const char *TAG = "App";
 
 // Application instance
 App app;
 
-
 void setup() {
     Serial.begin(115200);
 
-    ESP_LOGI(TAG, "=== Dictionary v2 - Two-Tier Architecture ===");
+    ESP_LOGI(TAG, "=== Dictionary v2 - Simplified Architecture ===");
     
-    // Tier 1: Initialize core services (essential)
-    ESP_LOGI(TAG, "Initializing core services (Tier 1)...");
-    if (!ServiceManager::instance().initializeCore()) {
-        ESP_LOGE(TAG, "Failed to initialize core services - app cannot continue");
-        return;
-    }
-
-    ESP_LOGI(TAG, "Initializing UI...");
-    // Initialize UI first so splash screen is available
-    ui_init();
-
-    ESP_LOGI(TAG, "Initializing application controller...");
-    // Initialize application
+    ESP_LOGI(TAG, "Initializing application...");
+    // Initialize application (this will initialize all services including display)
     if (!app.initialize()) {
         ESP_LOGE(TAG, "Failed to initialize application");
         return;
     }
 
+    ESP_LOGI(TAG, "Initializing UI...");
+    // Initialize UI after display service is ready
+    ui_init();
+
     ESP_LOGI(TAG, "Entering splash state...");
-    // Start in splash state - this will handle connectivity initialization
+    // Start in splash state, show screen immediately
     app.enterSplashState();
 
-    ESP_LOGI(TAG, "Setup complete - core services ready, splash screen will handle connectivity initialization");
+    app.initializeRemainingComponents();
+
+    // Enter splash state again for the remaining components to be initialized
+    app.enterSplashState();
+
+    ESP_LOGI(TAG, "Setup complete - application ready");
 }
 
 void loop() {

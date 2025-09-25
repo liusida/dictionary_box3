@@ -1,5 +1,6 @@
 #include "ble_keyboard.h"
 #include "core/log.h"
+#include "app/state_manager.h"
 static const char *TAG = "BLE";
 
 // Client callbacks implementation
@@ -126,10 +127,10 @@ void BLEKeyboard::tick() {
         }
     }
     if (toKeyboardSettings) {
-        ESP_LOGI(TAG, "To keyboard settings, no starting scan");
+        ESP_LOGI(TAG, "BLE disconnected - triggering keyboard settings screen");
         toKeyboardSettings = false;
-        // Trigger keyboard settings state transition
-        // This will be handled by the app state machine detecting BLE disconnection
+        // Actually trigger the keyboard settings state transition
+        StateManager::instance().requestKeyboardSettings();
     }
 }
 
@@ -411,6 +412,8 @@ char BLEKeyboard::convertKeyCodeToChar(uint8_t keyCode, uint8_t modifiers) {
 
 bool BLEKeyboard::isConnected() const {
     // Check if we have a connected client for our advertised device
+    ESP_LOGD(TAG, "advDevice: %p", advDevice);
+    delay(100);
     if (advDevice) {
         NimBLEClient *pClient = NimBLEDevice::getClientByPeerAddress(advDevice->getAddress());
         if (pClient && pClient->isConnected()) {

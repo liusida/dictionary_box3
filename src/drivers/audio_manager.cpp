@@ -1,4 +1,5 @@
 #include "audio_manager.h"
+#include "i2c_manager.h"
 #include "core/event_publisher.h"
 #include "core/log.h"
 
@@ -39,8 +40,20 @@ bool AudioManager::initialize() {
     // copier->setDelayOnNoData(500);
 
     ESP_LOGI(TAG, "Initializing audio pins...");
+    
+    // Ensure I2C is initialized before use
+    if (!I2CManager::instance().isReady()) {
+        ESP_LOGI(TAG, "I2C not ready, initializing...");
+        if (!I2CManager::instance().initialize()) {
+            ESP_LOGE(TAG, "Failed to initialize I2C for audio codec");
+            return false;
+        }
+    }
+    
     DriverPins pins;
-    pins.addI2C(PinFunction::CODEC, I2C_SCL, I2C_SDA);                     // SCL=18, SDA=8
+    
+    // I2C is already initialized by I2CManager - disable AudioTools I2C initialization
+    pins.addI2C(PinFunction::CODEC, SHARED_I2C_SCL, SHARED_I2C_SDA, -1, I2CManager::instance().getFrequency(), I2CManager::instance().getWire(), false);
     pins.addI2S(PinFunction::CODEC, I2S_MCLK, I2S_SCLK, I2S_WS, I2S_DOUT); // MCLK=2, BCLK=17, WS=45, DOUT=15
     pins.addPin(PinFunction::PA, PA_PIN, PinLogic::Output);
     board.setPins(pins);
@@ -102,7 +115,7 @@ bool AudioManager::play(const char *urlStr) {
         currentUrl = String(urlStr);
 
         ESP_LOGI(TAG, "Opening URL stream: %s", urlStr);
-        url->setTimeout(3000);
+        url->setTimeout(10000);
         url->httpRequest().header().setProtocol("HTTP/1.0");
         url->setConnectionClose(true);
         ESP_LOGD(TAG, "URL begin start");
@@ -125,7 +138,7 @@ bool AudioManager::play(const char *urlStr) {
             ESP_LOGI(TAG, "Expected content length: %d bytes", expectedContentLength);
         } else {
             ESP_LOGW(TAG, "No Content-Length header found");
-            expectedContentLength = 0; // Unknown size
+            expectedContentLength = 1024 * 1024; // Unknown size, default to 1MB
         }
 
         // Try to strip ID3 header only if enough data is available to avoid blocking
