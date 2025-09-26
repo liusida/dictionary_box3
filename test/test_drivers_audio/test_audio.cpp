@@ -4,6 +4,7 @@
 #include "memory_test_helper.h"
 #include "LittleFS.h"
 #include <WiFi.h>
+#include "test_wifi_credentials.h"
 
 using namespace dict;
 
