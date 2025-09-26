@@ -34,6 +34,7 @@ void ui_init(void)
     ui_Main_screen_init();
     ui_WIFI_Settings_screen_init();
     ui_Keyboard_Settings_screen_init();
+    ui_Overlay_screen_init();
     ui____initial_actions0 = lv_obj_create(NULL);
     lv_disp_load_scr(ui_Splash);
 }
@@ -44,4 +45,5 @@ void ui_destroy(void)
     ui_Main_screen_destroy();
     ui_WIFI_Settings_screen_destroy();
     ui_Keyboard_Settings_screen_destroy();
+    ui_Overlay_screen_destroy();
 }

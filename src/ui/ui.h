@@ -31,6 +31,7 @@ extern "C" {
 #include "ui_Main.h"
 #include "ui_WIFI_Settings.h"
 #include "ui_Keyboard_Settings.h"
+#include "ui_Overlay.h"
 
 ///////////////////// VARIABLES ////////////////////
 

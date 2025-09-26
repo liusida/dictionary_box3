@@ -24,15 +24,7 @@ void test_eventsystem_process_all_events_multiple_types(void);
 void test_eventpublisher_routing(void);
 
 
-using EventBus;
-using EventSystem;
-using EventPublisher;
-using AppStateEvent;
-using AudioEvent;
-using WiFiEvent;
-using BLEEvent;
-using DictionaryEvent;
-using UIEvent;
+using namespace dict;
 
 static bool received_flag = false;
 static int received_value = -1;

@@ -8,7 +8,10 @@ static const char* TAG = "StatusOverlay";
 StatusOverlay::StatusOverlay()
     : container_(nullptr), wifiIndicator_(nullptr), bleIndicator_(nullptr), audioIndicator_(nullptr),
       attachedScreen_(nullptr), initialized_(false), visible_(false), indicatorSize_(20),
-      animationDuration_(300), wifiConnected_(false), bleConnected_(false), audioPlaying_(false) {
+      animationDuration_(300), wifiConnected_(false), bleConnected_(false), audioPlaying_(false),
+      wifiColor_(lv_color_hex(0x0ABF0F)), bleColor_(lv_color_hex(0x4098F2)), audioColor_(lv_color_hex(0xCE45DC)),
+      wifiBlinking_(false), bleBlinking_(false), audioBlinking_(false), blinkInterval_(200), 
+      lastBlinkTime_(0), blinkState_(true) {
 }
 
 StatusOverlay::~StatusOverlay() {
@@ -23,18 +26,33 @@ bool StatusOverlay::initialize() {
 
     ESP_LOGI(TAG, "Initializing status overlay...");
 
+    // Check if LVGL is initialized by trying to create a simple object
+    // This is more reliable than checking DisplayManager state
+    null_screen_ = lv_obj_create(NULL);
+    if (!null_screen_) {
+        ESP_LOGE(TAG, "Failed to create null screen");
+        return false;
+    }
+
     // Create main container
-    container_ = lv_obj_create(NULL);
+    container_ = lv_obj_create(null_screen_); // setting an object's parent to NULL would create a new screen, and attaching won't work, so we make the container a child of the null screen before attaching to any screen.
     if (!container_) {
         ESP_LOGE(TAG, "Failed to create container");
         return false;
     }
 
-    // Set container properties
-    lv_obj_set_size(container_, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    lv_obj_set_style_pad_all(container_, 5, 0);
-    lv_obj_set_style_bg_opa(container_, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(container_, 0, 0);
+    // Set container properties - match SquareLine Studio design
+    lv_obj_remove_style_all(container_);
+    lv_obj_set_width(container_, 66);  // Match SquareLine Studio width
+    lv_obj_set_height(container_, 24); // Match SquareLine Studio height
+    lv_obj_set_align(container_, LV_ALIGN_TOP_RIGHT);
+    lv_obj_set_flex_flow(container_, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(container_, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_remove_flag(container_, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_pad_left(container_, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(container_, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(container_, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(container_, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     // Create indicators
     createIndicators();
@@ -73,8 +91,27 @@ void StatusOverlay::tick() {
         return;
     }
 
-    // Update indicator animations if needed
-    // This can be extended for more complex animations
+    // Handle blinking animations
+    unsigned long currentTime = millis();
+    if (currentTime - lastBlinkTime_ >= blinkInterval_) {
+        blinkState_ = !blinkState_;
+        lastBlinkTime_ = currentTime;
+        
+        // Update blinking indicators
+        if (wifiBlinking_ && wifiIndicator_) {
+            ESP_LOGD(TAG, "Blinking WiFi indicator %s", blinkState_ ? "true" : "false");
+            lv_obj_set_style_bg_opa(wifiIndicator_, blinkState_ ? 255 : 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_shadow_opa(wifiIndicator_, blinkState_ ? 255 : 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+        if (bleBlinking_ && bleIndicator_) {
+            lv_obj_set_style_bg_opa(bleIndicator_, blinkState_ ? 255 : 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_shadow_opa(bleIndicator_, blinkState_ ? 255 : 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+        if (audioBlinking_ && audioIndicator_) {
+            lv_obj_set_style_bg_opa(audioIndicator_, blinkState_ ? 255 : 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_shadow_opa(audioIndicator_, blinkState_ ? 255 : 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+    }
 }
 
 bool StatusOverlay::isReady() const {
@@ -93,6 +130,8 @@ void StatusOverlay::attachToScreen(lv_obj_t* screen) {
     attachedScreen_ = screen;
     
     ESP_LOGI(TAG, "Status overlay attached to screen");
+    ESP_LOGI(TAG, "Container size: %dx%d", lv_obj_get_width(container_), lv_obj_get_height(container_));
+    ESP_LOGI(TAG, "Container position: (%d, %d)", lv_obj_get_x(container_), lv_obj_get_y(container_));
 }
 
 void StatusOverlay::detachFromScreen() {
@@ -164,7 +203,8 @@ void StatusOverlay::setPosition(lv_align_t align, int32_t x, int32_t y) {
     }
 
     lv_obj_align(container_, align, x, y);
-    ESP_LOGI(TAG, "Status overlay position set");
+    ESP_LOGI(TAG, "Status overlay position set to align=%d, x=%d, y=%d", align, x, y);
+    ESP_LOGI(TAG, "New position: (%d, %d)", lv_obj_get_x(container_), lv_obj_get_y(container_));
 }
 
 void StatusOverlay::setStyle(const lv_style_t* style) {
@@ -181,9 +221,20 @@ void StatusOverlay::setIndicatorSize(uint8_t size) {
     
     if (initialized_) {
         // Update existing indicators
-        if (wifiIndicator_) lv_obj_set_size(wifiIndicator_, size, size);
-        if (bleIndicator_) lv_obj_set_size(bleIndicator_, size, size);
-        if (audioIndicator_) lv_obj_set_size(audioIndicator_, size, size);
+        if (wifiIndicator_) {
+            lv_obj_set_width(wifiIndicator_, size);
+            lv_obj_set_height(wifiIndicator_, size);
+        }
+        if (bleIndicator_) {
+            lv_obj_set_width(bleIndicator_, size);
+            lv_obj_set_height(bleIndicator_, size);
+        }
+        if (audioIndicator_) {
+            lv_obj_set_width(audioIndicator_, size);
+            lv_obj_set_height(audioIndicator_, size);
+        }
+        
+        ESP_LOGI(TAG, "Indicator size updated to %d", size);
     }
 }
 
@@ -191,61 +242,105 @@ void StatusOverlay::setAnimationDuration(uint16_t duration) {
     animationDuration_ = duration;
 }
 
+void StatusOverlay::setWiFiBlinking(bool enable) {
+    wifiBlinking_ = enable;
+    ESP_LOGI(TAG, "WiFi blinking %s", enable ? "enabled" : "disabled");
+}
+
+void StatusOverlay::setBLEBlinking(bool enable) {
+    bleBlinking_ = enable;
+    ESP_LOGI(TAG, "BLE blinking %s", enable ? "enabled" : "disabled");
+}
+
+void StatusOverlay::setAudioBlinking(bool enable) {
+    audioBlinking_ = enable;
+    ESP_LOGI(TAG, "Audio blinking %s", enable ? "enabled" : "disabled");
+}
+
+void StatusOverlay::setBlinkInterval(uint16_t intervalMs) {
+    blinkInterval_ = intervalMs;
+    ESP_LOGI(TAG, "Blink interval set to %d ms", intervalMs);
+}
+
 bool StatusOverlay::isAttached() const {
     return attachedScreen_ != nullptr;
 }
 
 void StatusOverlay::createIndicators() {
-    // Create WiFi indicator
-    wifiIndicator_ = lv_obj_create(container_);
-    lv_obj_set_size(wifiIndicator_, indicatorSize_, indicatorSize_);
-    lv_obj_set_style_bg_color(wifiIndicator_, lv_color_hex(0xFF0000), 0); // Red by default
-    lv_obj_set_style_border_width(wifiIndicator_, 0, 0);
-    lv_obj_align(wifiIndicator_, LV_ALIGN_TOP_LEFT, 0, 0);
+    ESP_LOGI(TAG, "Creating indicators with size %d", indicatorSize_);
+    
+    // Create WiFi indicator (button style like SquareLine Studio)
+    wifiIndicator_ = lv_button_create(container_);
+    lv_obj_set_width(wifiIndicator_, indicatorSize_);
+    lv_obj_set_height(wifiIndicator_, indicatorSize_);
+    lv_obj_set_align(wifiIndicator_, LV_ALIGN_CENTER);
+    lv_obj_add_flag(wifiIndicator_, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+    lv_obj_remove_flag(wifiIndicator_, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(wifiIndicator_, wifiColor_, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(wifiIndicator_, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ESP_LOGI(TAG, "WiFi indicator created");
 
-    // Create BLE indicator
-    bleIndicator_ = lv_obj_create(container_);
-    lv_obj_set_size(bleIndicator_, indicatorSize_, indicatorSize_);
-    lv_obj_set_style_bg_color(bleIndicator_, lv_color_hex(0xFF0000), 0); // Red by default
-    lv_obj_set_style_border_width(bleIndicator_, 0, 0);
-    lv_obj_align_to(bleIndicator_, wifiIndicator_, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
+    // Create BLE indicator (button style like SquareLine Studio)
+    bleIndicator_ = lv_button_create(container_);
+    lv_obj_set_width(bleIndicator_, indicatorSize_);
+    lv_obj_set_height(bleIndicator_, indicatorSize_);
+    lv_obj_set_align(bleIndicator_, LV_ALIGN_CENTER);
+    lv_obj_add_flag(bleIndicator_, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+    lv_obj_remove_flag(bleIndicator_, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(bleIndicator_, bleColor_, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(bleIndicator_, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ESP_LOGI(TAG, "BLE indicator created");
 
-    // Create Audio indicator
-    audioIndicator_ = lv_obj_create(container_);
-    lv_obj_set_size(audioIndicator_, indicatorSize_, indicatorSize_);
-    lv_obj_set_style_bg_color(audioIndicator_, lv_color_hex(0xFF0000), 0); // Red by default
-    lv_obj_set_style_border_width(audioIndicator_, 0, 0);
-    lv_obj_align_to(audioIndicator_, bleIndicator_, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
+    // Create Audio indicator (button style like SquareLine Studio)
+    audioIndicator_ = lv_button_create(container_);
+    lv_obj_set_width(audioIndicator_, indicatorSize_);
+    lv_obj_set_height(audioIndicator_, indicatorSize_);
+    lv_obj_set_align(audioIndicator_, LV_ALIGN_CENTER);
+    lv_obj_add_flag(audioIndicator_, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+    lv_obj_remove_flag(audioIndicator_, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(audioIndicator_, audioColor_, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(audioIndicator_, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ESP_LOGI(TAG, "Audio indicator created");
 
     // Add click callbacks
     lv_obj_add_event_cb(wifiIndicator_, indicatorClickCallback, LV_EVENT_CLICKED, this);
     lv_obj_add_event_cb(bleIndicator_, indicatorClickCallback, LV_EVENT_CLICKED, this);
     lv_obj_add_event_cb(audioIndicator_, indicatorClickCallback, LV_EVENT_CLICKED, this);
+    
+    ESP_LOGI(TAG, "All indicators created successfully");
 }
 
 void StatusOverlay::updateWiFiIndicator() {
     if (!wifiIndicator_) return;
     
-    applyIndicatorStyle(wifiIndicator_, wifiConnected_);
+    applyIndicatorStyle(wifiIndicator_, wifiConnected_, wifiColor_, wifiBlinking_);
 }
 
 void StatusOverlay::updateBLEIndicator() {
     if (!bleIndicator_) return;
     
-    applyIndicatorStyle(bleIndicator_, bleConnected_);
+    applyIndicatorStyle(bleIndicator_, bleConnected_, bleColor_, bleBlinking_);
 }
 
 void StatusOverlay::updateAudioIndicator() {
     if (!audioIndicator_) return;
     
-    applyIndicatorStyle(audioIndicator_, audioPlaying_);
+    applyIndicatorStyle(audioIndicator_, audioPlaying_, audioColor_, audioBlinking_);
 }
 
-void StatusOverlay::applyIndicatorStyle(lv_obj_t* indicator, bool active) {
+void StatusOverlay::applyIndicatorStyle(lv_obj_t* indicator, bool active, lv_color_t activeColor, bool blinking) {
     if (!indicator) return;
     
-    lv_color_t color = active ? lv_color_hex(0x00FF00) : lv_color_hex(0xFF0000); // Green if active, red if inactive
-    lv_obj_set_style_bg_color(indicator, color, 0);
+    lv_color_t color = active ? activeColor : lv_color_hex(0x333333); // Use passed color if active, grey if inactive
+    lv_obj_set_style_bg_color(indicator, color, LV_PART_MAIN | LV_STATE_DEFAULT);
+    
+    // Only set opacity if not blinking (blinking is handled in tick() method)
+    if (!blinking) {
+        lv_obj_set_style_bg_opa(indicator, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_shadow_opa(indicator, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
+    
+    ESP_LOGI(TAG, "Applied %s color to indicator", active ? "active" : "grey");
 }
 
 void StatusOverlay::indicatorClickCallback(lv_event_t* e) {

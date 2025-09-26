@@ -13,6 +13,7 @@ lv_obj_t * ui_TxtExplanation = NULL;
 lv_obj_t * ui_Panel2 = NULL;
 lv_obj_t * ui_TxtSampleSentence = NULL;
 lv_obj_t * ui_LookingUpBar = NULL;
+lv_obj_t * ui_IcoStatus = NULL;
 // event funtions
 
 // build funtions
@@ -113,6 +114,18 @@ void ui_Main_screen_init(void)
     //Compensating for LVGL9.1 draw crash with bar/slider max value when top-padding is nonzero and right-padding is 0
     if(lv_obj_get_style_pad_top(ui_LookingUpBar, LV_PART_MAIN) > 0) lv_obj_set_style_pad_right(ui_LookingUpBar,
                                                                                                    lv_obj_get_style_pad_right(ui_LookingUpBar, LV_PART_MAIN) + 1, LV_PART_MAIN);
+    ui_IcoStatus = lv_spinner_create(ui_Main);
+    //lv_spinner_set_anim_params(ui_IcoStatus, 1000, 90);
+    lv_obj_set_width(ui_IcoStatus, 10);
+    lv_obj_set_height(ui_IcoStatus, 10);
+    lv_obj_set_x(ui_IcoStatus, -10);
+    lv_obj_set_y(ui_IcoStatus, 10);
+    lv_obj_set_align(ui_IcoStatus, LV_ALIGN_TOP_RIGHT);
+    lv_obj_add_flag(ui_IcoStatus, LV_OBJ_FLAG_HIDDEN);     /// Flags
+    lv_obj_remove_flag(ui_IcoStatus, LV_OBJ_FLAG_CLICKABLE);      /// Flags
+
+    lv_obj_set_style_arc_color(ui_IcoStatus, lv_color_hex(0x4040FF), LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_arc_opa(ui_IcoStatus, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
 
 }
 
@@ -129,5 +142,6 @@ void ui_Main_screen_destroy(void)
     ui_Panel2 = NULL;
     ui_TxtSampleSentence = NULL;
     ui_LookingUpBar = NULL;
+    ui_IcoStatus = NULL;
 
 }

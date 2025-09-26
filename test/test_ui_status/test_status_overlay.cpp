@@ -5,11 +5,21 @@
 
 using namespace dict;
 
+// External reference to global display from test_main.cpp
+extern DisplayManager* g_display;
+
 // =================================== TESTS ===================================
 
 void test_status_overlay_initialize_and_ready(void) {
+    // Use global display manager (initialized in setUp)
+    TEST_ASSERT_NOT_NULL(g_display);
+    TEST_ASSERT_TRUE(g_display->isReady());
+    
     StatusOverlay status;
-    TEST_ASSERT_TRUE_MESSAGE(status.initialize(), "Status overlay initialize() failed");
+    ESP_LOGI("TEST", "StatusOverlay created, calling initialize...");
+    bool status_init_result = status.initialize();
+    ESP_LOGI("TEST", "StatusOverlay initialize result: %s", status_init_result ? "true" : "false");
+    TEST_ASSERT_TRUE_MESSAGE(status_init_result, "Status overlay initialize() failed");
     TEST_ASSERT_TRUE(status.isReady());
     
     // Test that we can call isReady multiple times
@@ -22,6 +32,10 @@ void test_status_overlay_initialize_and_ready(void) {
 }
 
 void test_status_overlay_attach_detach_screen(void) {
+    // Use global display manager (initialized in setUp)
+    TEST_ASSERT_NOT_NULL(g_display);
+    TEST_ASSERT_TRUE(g_display->isReady());
+    
     StatusOverlay status;
     TEST_ASSERT_TRUE_MESSAGE(status.initialize(), "Status overlay initialize() failed");
     TEST_ASSERT_TRUE(status.isReady());
@@ -47,6 +61,10 @@ void test_status_overlay_attach_detach_screen(void) {
 }
 
 void test_status_overlay_show_hide(void) {
+    // Use global display manager (initialized in setUp)
+    TEST_ASSERT_NOT_NULL(g_display);
+    TEST_ASSERT_TRUE(g_display->isReady());
+    
     StatusOverlay status;
     TEST_ASSERT_TRUE_MESSAGE(status.initialize(), "Status overlay initialize() failed");
     TEST_ASSERT_TRUE(status.isReady());
@@ -76,6 +94,10 @@ void test_status_overlay_show_hide(void) {
 }
 
 void test_status_overlay_status_updates(void) {
+    // Use global display manager (initialized in setUp)
+    TEST_ASSERT_NOT_NULL(g_display);
+    TEST_ASSERT_TRUE(g_display->isReady());
+    
     StatusOverlay status;
     TEST_ASSERT_TRUE_MESSAGE(status.initialize(), "Status overlay initialize() failed");
     TEST_ASSERT_TRUE(status.isReady());

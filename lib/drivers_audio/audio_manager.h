@@ -4,14 +4,12 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "AudioTools.h"
 #include "AudioTools/AudioLibs/AudioBoardStream.h"
-#include "AudioTools/CoreAudio/AudioHttp/URLStream.h"
 #include "AudioTools/AudioCodecs/CodecMP3Helix.h"
-#include "AudioTools/AudioLibs/MemoryManager.h"
-#include "AudioTools/CoreAudio/AudioMetaData/MetaDataFilter.h"
+#include "AudioTools/CoreAudio/AudioHttp/URLStream.h"
+#include "AudioTools/CoreAudio/AudioPlayer.h"
+#include "AudioTools/Disk/AudioSourceURL.h"
 #include "AudioTools/Disk/AudioSourceLittleFS.h"
 #include "LittleFS.h"
 #include "audio_source_littlefs_mounted.h"
@@ -19,24 +17,6 @@
 #include "events.h"
 
 namespace dict {
-
-class EncodedAudioStreamPatch : public EncodedAudioStream {
-// we use this patch class to modify the protected enc_out. once the issue is resovled, we can remove this class.
-// https://github.com/pschatzmann/arduino-audio-tools/issues/2165
-public:
-    EncodedAudioStreamPatch(AudioBoardStream& out, MP3DecoderHelix& mp3) : EncodedAudioStream(&out, &mp3) {}
-    bool begin(AudioInfo info) {
-        setAudioInfo(info);
-        return begin();
-    }
-    
-    bool begin() override {
-        setupReader();
-        ReformatBaseStream::begin();
-        LOGD("Fix the bug: Here info has sample_rate %d, audioInfo() has sample_rate %d, but enc_out.info has sample_rate %d.", info.sample_rate, audioInfo().sample_rate, enc_out.audioInfo().sample_rate);
-        return enc_out.begin(info);
-      }
-};
 
 class AudioManager {
 public:
@@ -55,8 +35,8 @@ public:
     bool stop(); // Stop current audio playback
     
     // Utility/getter methods
-    bool isCurrentlyPlaying() const { return isPlaying && !isPaused; } // Check if audio is currently playing
-    bool isCurrentlyPaused() const { return isPaused; } // Check if audio is paused
+    bool isCurrentlyPlaying() const; // Check if audio is currently playing
+    bool isCurrentlyPaused() const; // Check if audio is paused
     String getCurrentUrl() const { return currentUrl; } // Get current audio URL/file path
     void setVolume(float volume); // Set audio volume (0.0 to 1.0)
 
@@ -66,37 +46,26 @@ private:
     AudioBoardStream out;
     AudioInfo info;
     
-    // Network stream and MP3 decoder pipeline
-    MP3DecoderHelix mp3;
-    EncodedAudioStreamPatch decoded;
-    MetaDataFilter metadataFilter;
-    URLStream *url;
-    File *fileStream;
-    StreamCopy *copier;
+    // High-level player and decoder
+    AudioPlayer* player;
+    MP3DecoderHelix decoder;
     
-    // AudioPlayer for local files
-    AudioSourceLittleFSMounted *localFileSource;
-    AudioPlayer *localFilePlayer;
-    
-    // Task handle for audio processing
-    TaskHandle_t audioTaskHandle;
+    // Audio sources (created dynamically based on URL/file)
+    AudioSourceURL* urlSource;
+    AudioSourceLittleFSMounted* fileSource;
+    URLStream urlStream;
     
     // State management
     bool isInitialized;
     bool isPlaying;
-    bool isPaused;
     String currentUrl;
-    SemaphoreHandle_t audioMutex;
     
-    // Timeout settings
-    uint32_t playbackCompleteCountThreshold;
-    
-    uint32_t expectedContentLength;
-
     // Private methods
-    static void audioTask(void* parameter);
-    void processAudio();
-
+    bool isUrl(const char* path) const; // Check if path is a URL
+    void createUrlSource(const char* url); // Create URL source for playback
+    void createFileSource(const char* filePath); // Create file source for playback
+    void cleanupSources(); // Clean up current sources
+    static void staticMetadataCallback(MetaDataType type, const char* str, int len); // Static metadata callback
 };
 
 } // namespace dict
