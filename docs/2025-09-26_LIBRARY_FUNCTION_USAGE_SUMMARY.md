@@ -5,7 +5,11 @@
 
 ## Overview
 
-This document summarizes the functions used from each library in the `./lib/` directory as tested in the `./test/` directory. The test suite provides comprehensive coverage of initialization, state management, event processing, and memory leak detection.
+This document summarizes the functions used from each library in the `./lib/` directory as tested in the `./test/` directory. All libraries now use the unified `dict` namespace. The test suite provides comprehensive coverage of initialization, state management, event processing, and memory leak detection.
+
+## Namespace Usage
+
+All test files use `using namespace dict;` to access library classes and functions. This provides clean, readable test code without verbose `dict::` prefixes.
 
 ## Library Function Usage
 
@@ -96,10 +100,34 @@ This document summarizes the functions used from each library in the `./lib/` di
 4. **Tick Processing**: Many tests call `tick()` methods for event processing
 5. **Event System Integration**: Tests use the event system for decoupled communication
 
+### drivers_network → test_drivers_wifi
+
+**NetworkControl Class:**
+- `initialize()` - Initialize network control
+- `isReady()` - Check if network control is ready
+- `tick()` - Monitor connection status
+- `connectToNetwork(String, String)` - Connect to specific network
+- `isConnected()` - Check if WiFi is connected
+- `getIP()` - Get current IP address
+- `saveCredentials(String, String)` - Save WiFi credentials
+- `loadCredentials(String&, String&)` - Load saved credentials
+- `clearCredentials()` - Clear saved credentials
+- `hasSavedCredentials()` - Check if credentials exist
+- `setOnConnected()` - Set connection success callback
+- `setOnConnectionFailed()` - Set connection failure callback
+- `randomizeMACAddress()` - Randomize WiFi MAC address
+- `shutdown()` - Clean shutdown of network control
+
+### test_psram
+
+**PSRAM Memory Tests:**
+- `ps_malloc()` - Allocate PSRAM memory
+- `free()` - Free allocated memory
+- `checkMemoryUsage()` - Check for memory leaks
+
 ## Additional Libraries Referenced
 
 - **core_log** - Used for logging (ESP_LOGI, ESP_LOGE, etc.)
-- **drivers_network** - Referenced in WiFi tests but not directly tested
 
 ## Coverage Summary
 
