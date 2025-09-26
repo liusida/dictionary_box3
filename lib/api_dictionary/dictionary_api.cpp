@@ -1,18 +1,18 @@
 #include "dictionary_api.h"
-#include "core/event_publisher.h"
-#include "audio_manager.h"
+#include "../core_eventing/event_publisher.h"
+#include "../core_log/log.h"
 #include <HTTPClient.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
-#include "core/log.h"
+
+namespace dict {
 
 static const char *TAG = "DictionaryApi";
 
-DictionaryApi::DictionaryApi(AudioManager& audioDriver) 
-    : audioDriver_(audioDriver),
-      baseUrl_("https://dict.liusida.com/api/define"),
-      audioUrl_("https://dict.liusida.com/api/audio/stream"),
+DictionaryApi::DictionaryApi() 
+    : baseUrl_("https://dict.liusida.com/api/define"),
+      audioBaseUrl_("https://dict.liusida.com/api/audio/stream"),
       initialized_(false) {
 }
 
@@ -22,6 +22,7 @@ DictionaryApi::~DictionaryApi() {
 
 bool DictionaryApi::initialize() {
     if (initialized_) {
+        ESP_LOGI(TAG, "Dictionary API already initialized");
         return true;
     }
     
@@ -48,13 +49,15 @@ DictionaryResult DictionaryApi::lookupWord(const String& word) {
     
     if (!isWordValid(word)) {
         ESP_LOGW(TAG, "Invalid word provided");
+
+        EventPublisher::instance().publish(DictionaryEvent(DictionaryEvent::LookupFailed, word, "", "", "Invalid word"));
         return DictionaryResult();
     }
     
     ESP_LOGI(TAG, "Looking up word: %s", word.c_str());
     
     // Publish lookup started event
-    EventPublisher::instance().publishDictionaryEvent(DictionaryEvent::LookupStarted, word);
+    EventPublisher::instance().publish(DictionaryEvent(DictionaryEvent::LookupStarted, word));
     
     // Build JSON body
     JsonDocument doc;
@@ -137,37 +140,42 @@ DictionaryResult DictionaryApi::lookupWord(const String& word) {
     
     // Publish lookup completed event
     if (success) {
-        EventPublisher::instance().publishDictionaryEvent(DictionaryEvent::LookupCompleted, outWord, outExplanation, outSampleSentence);
+        EventPublisher::instance().publish(DictionaryEvent(DictionaryEvent::LookupCompleted, outWord, outExplanation, outSampleSentence));
     } else {
-        EventPublisher::instance().publishDictionaryEvent(DictionaryEvent::LookupFailed, word, "", "", "No results found");
+        EventPublisher::instance().publish(DictionaryEvent(DictionaryEvent::LookupFailed, word, "", "", "No results found"));
     }
     
     return DictionaryResult(outWord, outExplanation, outSampleSentence, success);
 }
 
-bool DictionaryApi::playAudio(const String& word, const String& audioType) {
+AudioUrl DictionaryApi::getAudioUrl(const String& word, const String& audioType) {
     if (!isReady()) {
         ESP_LOGW(TAG, "Service not ready (WiFi not connected)");
-        return false;
+        return AudioUrl();
     }
     
     if (!isWordValid(word)) {
-        ESP_LOGW(TAG, "Invalid word for audio playback");
-        return false;
+        ESP_LOGW(TAG, "Invalid word for audio URL generation");
+        return AudioUrl();
     }
     
-    String encoded = urlEncode(word);
-    if (encoded.length() == 0) {
-        return false;
+    String encodedWord = urlEncode(word);
+    if (encodedWord.length() == 0) {
+        return AudioUrl();
+    }
+
+    String encodedAudioType = urlEncode(audioType);
+    if (encodedAudioType.length() == 0) {
+        return AudioUrl();
     }
     
-    String url = audioUrl_ + "?word=" + encoded + "&type=" + audioType;
-    ESP_LOGD(TAG, "Playing audio from server: %s", url.c_str());
+    String url = audioBaseUrl_ + "?word=" + encodedWord + "&type=" + encodedAudioType;
+    ESP_LOGD(TAG, "Generated audio URL: %s", url.c_str());
     
     // Publish audio requested event
-    EventPublisher::instance().publishDictionaryEvent(DictionaryEvent::AudioRequested, word, "", "", audioType);
+    EventPublisher::instance().publish(DictionaryEvent(DictionaryEvent::AudioRequested, word, "", "", audioType));
     
-    return audioDriver_.play(url.c_str());
+    return AudioUrl(url, audioType, true);
 }
 
 bool DictionaryApi::isReady() const {
@@ -180,6 +188,14 @@ void DictionaryApi::setBaseUrl(const String& url) {
 
 String DictionaryApi::getBaseUrl() const {
     return baseUrl_;
+}
+
+void DictionaryApi::setAudioBaseUrl(const String& url) {
+    audioBaseUrl_ = url;
+}
+
+String DictionaryApi::getAudioBaseUrl() const {
+    return audioBaseUrl_;
 }
 
 String DictionaryApi::urlEncode(const String& str) {
@@ -211,3 +227,5 @@ bool DictionaryApi::isWordValid(const String& word) {
     if (word.equalsIgnoreCase("null")) return false;
     return true;
 }
+
+} // namespace dict

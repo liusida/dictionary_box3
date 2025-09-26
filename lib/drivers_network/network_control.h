@@ -1,11 +1,5 @@
 #pragma once
-
-#include <WiFi.h>
-#include <HTTPClient.h>
-#include <WiFiClientSecure.h>
-#include <Preferences.h>
-#include <vector>
-#include <functional>
+#include "dictionary.h"
 
 namespace dict {
 

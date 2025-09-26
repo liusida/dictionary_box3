@@ -120,39 +120,8 @@ bool NetworkControl::connectWithSavedCredentials() {
 
     ESP_LOGI(TAG, "Attempting to connect to saved network: %s", ssid.c_str());
 
-    WiFi.begin(ssid.c_str(), password.c_str());
-
-    // Wait for connection with timeout
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-        delay(500);
-        attempts++;
-        // keep silent during retry to avoid spam
-    }
-
-    if (WiFi.status() == WL_CONNECTED) {
-        ESP_LOGI(TAG, "Connected! IP address: %s", WiFi.localIP().toString().c_str());
-
-        // Publish WiFi connected event
-        EventPublisher::instance().publish(WiFiEvent(WiFiEvent::Connected, ssid, WiFi.localIP()));
-
-        // Set DNS for faster DNS resolution
-        WiFi.setDNS(IPAddress(8, 8, 8, 8), IPAddress(114, 114, 114, 114));
-
-        // Set time, HTTPS needs it
-        configTime(0, 0, "pool.ntp.org", "time.nist.gov");
-        time_t now = 0;
-        while (now < 1700000000) { // wait until time is set
-            delay(200);
-            time(&now);
-        }
-
-        return true;
-    } else {
-        ESP_LOGE(TAG, "Connection timeout");
-        WiFi.disconnect();
-        return false;
-    }
+    // Use the existing connectToNetwork method with loaded credentials
+    return connectToNetwork(ssid, password);
 }
 
 std::vector<String> NetworkControl::scanNetworks() {
@@ -190,7 +159,7 @@ bool NetworkControl::connectToNetwork(const String &ssid, const String &password
         return false;
     }
 
-    ESP_LOGI(TAG, "Starting WiFi.begin to: %s", ssid.c_str());
+    ESP_LOGI(TAG, "Starting WiFi.begin to: %s with password: %s", ssid.c_str(), password.c_str());
     // Keep credentials in memory and persist only when connected
     pendingSsid_ = ssid;
     pendingPassword_ = password;
@@ -282,6 +251,18 @@ void NetworkControl::tick() {
             wifiConnected = true;
             lastDisconnectionTime = 0;
             connectionAttemptInProgress_ = false;
+            
+            // Set DNS for faster DNS resolution
+            WiFi.setDNS(IPAddress(8, 8, 8, 8), IPAddress(114, 114, 114, 114));
+
+            // Set time, HTTPS needs it
+            configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+            time_t now = 0;
+            while (now < 1700000000) { // wait until time is set
+                delay(200);
+                time(&now);
+            }
+            
             // Persist pending credentials if present
             if (pendingSsid_.length() > 0) {
                 saveCredentials(pendingSsid_, pendingPassword_);

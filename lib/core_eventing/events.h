@@ -1,10 +1,5 @@
 #pragma once
-#include <Arduino.h>
-
-// Undefine Arduino's word macro to avoid conflicts
-#ifdef word
-#undef word
-#endif
+#include "dictionary.h"
 
 namespace dict {
 
@@ -101,6 +96,7 @@ struct DictionaryEvent {
     String errorMessage;
     unsigned long timestamp;
     
+    DictionaryEvent() : type(LookupStarted), timestamp(millis()) {}
     DictionaryEvent(Type t, const String& w = "", const String& e = "", const String& s = "", const String& err = "") 
         : type(t), word(w), explanation(e), sampleSentence(s), errorMessage(err), timestamp(millis()) {}
 };

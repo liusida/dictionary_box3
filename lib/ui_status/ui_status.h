@@ -1,7 +1,6 @@
 #pragma once
-
+#include "dictionary.h"
 #include "lvgl.h"
-#include <Arduino.h>
 
 namespace dict {
 
