@@ -8,8 +8,8 @@
 extern const uint8_t certs_x509_crt_bundle_start[] asm("_binary_certs_x509_crt_bundle_start");
 extern const uint8_t certs_x509_crt_bundle_end[]   asm("_binary_certs_x509_crt_bundle_end");
 
-static const char *SSID = "StarLab_2.4G";
-static const char *PASSWORD = "1234567891";
+static const char *SSID = "";
+static const char *PASSWORD = "";
 static const char *MP3_URL = "https://dict.liusida.com/apple.mp3";
 
 void setup() {

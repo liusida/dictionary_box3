@@ -4,8 +4,8 @@
 // #include <esp_wifi.h>
 #include "drivers/audio_manager.h"
 
-static const char* SSID     = "StarLab_2.4G";
-static const char* PASSWORD = "1234567891";
+static const char* SSID     = "";
+static const char* PASSWORD = "";
 static const char* MP3_URL  = "https://dict.liusida.com/api/audio/stream?word=apple&type=word";
 // static const char* MP3_URL  = "http://192.168.1.164:1234/apple.mp3";
 
