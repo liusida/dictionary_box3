@@ -250,7 +250,7 @@ void StatusOverlay::applyIndicatorStyle(lv_obj_t* indicator, bool active) {
 
 void StatusOverlay::indicatorClickCallback(lv_event_t* e) {
     StatusOverlay* overlay = static_cast<StatusOverlay*>(lv_event_get_user_data(e));
-    lv_obj_t* indicator = lv_event_get_target(e);
+    lv_obj_t* indicator = static_cast<lv_obj_t*>(lv_event_get_target(e));
     
     if (!overlay) return;
     
