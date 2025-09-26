@@ -46,6 +46,7 @@ class BLEKeyboard {
     int powerLevel;
     uint32_t scanTimeMs;
     uint32_t scanRestartIntervalMs;
+    bool toKeyboardSettings;
     Preferences preferences;
     NimBLEScan *pScan;
 
