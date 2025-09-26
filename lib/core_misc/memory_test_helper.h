@@ -1,6 +1,5 @@
 #pragma once
-
-#include <Arduino.h>
+#include "common.h"
 #include <unity.h>
 
 namespace dict {

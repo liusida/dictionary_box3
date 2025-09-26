@@ -1,5 +1,5 @@
 #include "ble_keyboard.h"
-#include "log.h"
+#include "core_misc/log.h"
 
 namespace dict {
 
@@ -50,13 +50,15 @@ class BLEKeyboard::ScanCallbacks : public NimBLEScanCallbacks {
     void onScanEnd(const NimBLEScanResults &results, int reason) override {
         ESP_LOGI(TAG, "Scan Ended, reason: %d, device count: %d; Restarting scan", reason, results.getCount());
         keyboard->toKeyboardSettings = true;
+        keyboard->scanning_ = false;
+        keyboard->scanEndTime_ = millis();
     }
 };
 
 static BLEKeyboard *keyboardInstance = nullptr;
 
 BLEKeyboard::BLEKeyboard()
-    : advDevice(nullptr), doConnect(false), powerLevel(-15), scanTimeMs(500), scanRestartIntervalMs(0), clientCallbacks(nullptr),
+    : initialized_(false), scanning_(false), scanStartTime_(0), scanEndTime_(0), advDevice(nullptr), doConnect(false), powerLevel(-15), scanTimeMs(500), scanRestartIntervalMs(0), clientCallbacks(nullptr),
       scanCallbacks(nullptr), keyCallback(nullptr), toKeyboardSettings(false) {
     clientCallbacks = new ClientCallbacks(this);
     scanCallbacks = new ScanCallbacks(this);
@@ -73,10 +75,12 @@ BLEKeyboard::~BLEKeyboard() {
 
 bool BLEKeyboard::initialize() {
     begin(0);
+    initialized_ = true;
     return true;
 }
 
 void BLEKeyboard::shutdown() {
+    initialized_ = false;
     if (pScan) {
         pScan->stop();
     }
@@ -94,7 +98,7 @@ void BLEKeyboard::tick() {
     }
 }
 
-bool BLEKeyboard::isReady() const { return isConnected(); }
+bool BLEKeyboard::isReady() const { return initialized_; }
 
 void BLEKeyboard::begin(uint32_t scanRestartIntervalMs) {
     this->scanRestartIntervalMs = scanRestartIntervalMs;
@@ -303,13 +307,15 @@ char BLEKeyboard::convertKeyCodeToChar(uint8_t keyCode, uint8_t modifiers) {
 }
 
 bool BLEKeyboard::isConnected() const {
-    ESP_LOGD(TAG, "advDevice: %p", advDevice);
-    delay(100);
     if (advDevice) {
         NimBLEClient *pClient = NimBLEDevice::getClientByPeerAddress(advDevice->getAddress());
         if (pClient && pClient->isConnected()) {
             return true;
         }
+    }
+    uint32_t t0 = millis();
+    if (millis() - t0 > 5000) {
+        ESP_LOGD(TAG, "advDevice: %p", advDevice);
     }
     return false;
 }
@@ -318,6 +324,9 @@ void BLEKeyboard::startScan() {
     ESP_LOGI(TAG, "Starting BLE scan...");
     discoveredDevices.clear();
     if (pScan) {
+        scanning_ = true;
+        scanStartTime_ = millis();
+        scanEndTime_ = 0;
         pScan->start(scanTimeMs, false, true);
     } else {
         ESP_LOGE(TAG, "Scan object not initialized");
@@ -326,15 +335,15 @@ void BLEKeyboard::startScan() {
 
 std::vector<String> BLEKeyboard::getDiscoveredDevices() {
     std::vector<String> deviceNames;
-    for (const auto& device : discoveredDevices) {
+    for (const auto &device : discoveredDevices) {
         deviceNames.push_back(device.first);
     }
     return deviceNames;
 }
 
-bool BLEKeyboard::connectToDevice(const String& deviceName) {
+bool BLEKeyboard::connectToDevice(const String &deviceName) {
     ESP_LOGI(TAG, "Attempting to connect to device: %s", deviceName.c_str());
-    for (const auto& device : discoveredDevices) {
+    for (const auto &device : discoveredDevices) {
         if (device.first == deviceName) {
             ESP_LOGI(TAG, "Found device %s with address %s", device.first.c_str(), device.second.c_str());
             preferences.putString("addr", device.second);
@@ -348,5 +357,3 @@ bool BLEKeyboard::connectToDevice(const String& deviceName) {
 }
 
 } // namespace dict
-
-

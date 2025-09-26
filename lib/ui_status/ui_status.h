@@ -1,5 +1,5 @@
 #pragma once
-#include "dictionary.h"
+#include "common.h"
 #include "lvgl.h"
 
 namespace dict {

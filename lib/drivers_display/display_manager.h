@@ -1,8 +1,9 @@
 #pragma once
+#include "common.h"
 #include "TFT_eSPI.h"
 #include "GT911.h"
 #include "lvgl.h"
-#include "i2c_manager.h"
+#include "drivers_i2c/i2c_manager.h"
 
 namespace dict {
 

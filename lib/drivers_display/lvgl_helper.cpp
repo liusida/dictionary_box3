@@ -1,8 +1,7 @@
 #include "lvgl_helper.h"
-#include <Arduino.h>
-#include "event_system.h"
-#include "events.h"
-#include "log.h"
+#include "core_eventing/event_system.h"
+#include "core_eventing/events.h"
+#include "core_misc/log.h"
 
 namespace dict {
 
@@ -31,8 +30,8 @@ void addObjectToDefaultGroup(lv_obj_t *obj) {
 }
 
 // --- Key handling from KeyEvent bus ---
-static void (*s_onSubmit)() = nullptr;
-static void (*s_onKeyIn)(char) = nullptr;
+static SubmitCallback s_onSubmit;
+static KeyInCallback s_onKeyIn;
 static EventBus<KeyEvent>::ListenerId s_keyListenerId = 0;
 
 static void handleKeyEvent(const KeyEvent& ev) {
@@ -58,14 +57,14 @@ static void handleKeyEvent(const KeyEvent& ev) {
     }
 }
 
-void lvglInstallKeyEventHandler(void (*onSubmit)(), void (*onKeyIn)(char)) {
+void lvglInstallKeyEventHandler(const SubmitCallback& onSubmit, const KeyInCallback& onKeyIn) {
     s_onSubmit = onSubmit;
     s_onKeyIn = onKeyIn;
     auto& bus = EventSystem::instance().getEventBus<KeyEvent>();
     s_keyListenerId = bus.subscribe(handleKeyEvent);
 }
 
-void lvglSetKeyCallbacks(void (*onSubmit)(), void (*onKeyIn)(char)) {
+void lvglSetKeyCallbacks(const SubmitCallback& onSubmit, const KeyInCallback& onKeyIn) {
     s_onSubmit = onSubmit;
     s_onKeyIn = onKeyIn;
 }

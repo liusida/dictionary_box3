@@ -1,5 +1,9 @@
 #pragma once
-#include "dictionary.h"
+#include "common.h"
+#include <WiFi.h>
+#include <Preferences.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 
 namespace dict {
 
@@ -16,8 +20,11 @@ public:
     bool isReady() const; // Check if network control is ready
     
     // Main entry point - tries saved credentials first, falls back to UI
-    bool begin(); // Start WiFi connection using saved credentials or show UI
-    
+    bool begin(); // Initialize network control
+    bool isConnecting() const { return connecting_; }
+    uint32_t getConnectStartTime() const { return connectStartTime_; } // Get start time of current connection attempt
+    uint32_t getConnectEndTime() const { return connectEndTime_; } // Get end time of current connection attempt
+
     // Connection management methods
     bool isConnected(); // Check if WiFi is currently connected
     wl_status_t getStatus(); // Get current WiFi connection status
@@ -42,6 +49,11 @@ public:
 
 private:
     Preferences preferences;
+    bool initialized_;
+    bool connecting_;
+    uint32_t connectStartTime_;
+    uint32_t connectEndTime_;
+
     bool wifiConnected;
     unsigned long lastConnectionCheck;
     unsigned long lastDisconnectionTime;
@@ -49,10 +61,6 @@ private:
     // Pending credentials to persist on successful connection
     String pendingSsid_;
     String pendingPassword_;
-    // Connection attempt tracking
-    bool connectionAttemptInProgress_ = false;
-    unsigned long connectionStartTime_ = 0;
-    unsigned long connectionTimeoutMs_ = 10000;
     // Callbacks
     ConnectedCallback onConnected_{};
     ConnectionFailedCallback onConnectionFailed_{};

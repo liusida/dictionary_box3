@@ -1,7 +1,7 @@
 #include "audio_manager.h"
-#include "../drivers_i2c/i2c_manager.h"
-#include "../core_eventing/event_publisher.h"
-#include "../core_log/log.h"
+#include "core_eventing/event_publisher.h"
+#include "core_misc/log.h"
+#include "drivers_i2c/i2c_manager.h"
 
 namespace dict {
 
@@ -10,7 +10,7 @@ static const char *TAG = "AudioManager";
 AudioManager::AudioManager()
     : board(AudioDriverES8311, NoPins), out(board), info(32000, 2, 16), 
       player(nullptr), decoder(), urlSource(nullptr), fileSource(nullptr), 
-      urlStream(), isInitialized(false), isPlaying(false), currentUrl("") {
+      urlStream(), initialized_(false), isPlaying(false), currentUrl("") {
 }
 
 AudioManager::~AudioManager() {
@@ -19,7 +19,7 @@ AudioManager::~AudioManager() {
 
 bool AudioManager::initialize() {
     ESP_LOGI(TAG, "=== AudioManager::initialize() called ===");
-    if (isInitialized) {
+    if (initialized_) {
         ESP_LOGI(TAG, "AudioManager already initialized, returning true");
         return true;
     }
@@ -55,13 +55,13 @@ bool AudioManager::initialize() {
     // Don't create player here - create it when we have a source
     // This avoids initialization issues
 
-    isInitialized = true;
+    initialized_ = true;
     ESP_LOGI(TAG, "AudioManager initialized successfully");
     return true;
 }
 
 void AudioManager::shutdown() {
-    if (!isInitialized) {
+    if (!initialized_) {
         return;
     }
 
@@ -86,12 +86,12 @@ void AudioManager::shutdown() {
     // The AudioBoard will be cleaned up when the object is destroyed
     // out.end();
 
-    isInitialized = false;
+    initialized_ = false;
     ESP_LOGI(TAG, "AudioManager shutdown complete");
 }
 
 void AudioManager::tick() {
-    if (!isInitialized || !player) {
+    if (!initialized_ || !player) {
         return;
     }
 
@@ -99,12 +99,8 @@ void AudioManager::tick() {
     player->copy();
 }
 
-bool AudioManager::isReady() const {
-    return isInitialized; // Player is created on-demand in play()
-}
-
 bool AudioManager::play(const char* url) {
-    if (!isInitialized) {
+    if (!initialized_) {
         ESP_LOGE(TAG, "AudioManager not initialized");
         return false;
     }
@@ -163,7 +159,7 @@ bool AudioManager::play(const char* url) {
 }
 
 bool AudioManager::stop() {
-    if (!isInitialized || !player) {
+    if (!initialized_ || !player) {
         return false;
     }
 
@@ -192,7 +188,7 @@ bool AudioManager::isCurrentlyPaused() const {
 }
 
 void AudioManager::setVolume(float volume) {
-    if (!isInitialized || !player) {
+    if (!initialized_ || !player) {
         return;
     }
     

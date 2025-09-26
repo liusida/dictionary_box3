@@ -1,5 +1,6 @@
 #include "event_system.h"
 #include "events.h"
+#include <mutex>
 
 namespace dict {
 

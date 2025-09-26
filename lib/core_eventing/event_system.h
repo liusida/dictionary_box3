@@ -1,5 +1,10 @@
 #pragma once
-#include "dictionary.h"
+#include "common.h"
+#include "events.h"
+#include <queue>
+#include <mutex>
+#include <functional>
+#include <vector>
 
 namespace dict {
 

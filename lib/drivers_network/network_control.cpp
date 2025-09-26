@@ -1,12 +1,12 @@
 #include "network_control.h"
+#include "esp_system.h" // for esp_random
+#include "esp_wifi.h"
 #include "event_publisher.h"
 #include "log.h"
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include <time.h>
 #include <vector>
-#include "esp_wifi.h"
-#include "esp_system.h"  // for esp_random
 
 namespace dict {
 
@@ -17,7 +17,9 @@ static const char *TAG = "WiFi";
 extern const uint8_t certs_x509_crt_bundle_start[] asm("_binary_certs_x509_crt_bundle_start");
 extern const uint8_t certs_x509_crt_bundle_end[] asm("_binary_certs_x509_crt_bundle_end");
 
-NetworkControl::NetworkControl() : wifiConnected(false), lastConnectionCheck(0), lastDisconnectionTime(0), wasConnected(false) {}
+NetworkControl::NetworkControl()
+    : initialized_(false), connecting_(false), connectStartTime_(0), connectEndTime_(0), wifiConnected(false), lastConnectionCheck(0),
+      lastDisconnectionTime(0), wasConnected(false) {}
 
 NetworkControl::~NetworkControl() {}
 
@@ -40,9 +42,12 @@ void NetworkControl::shutdown() {
     preferences.end();
 
     // Reset internal state
+    initialized_ = false;
+    connecting_ = false;
+    connectStartTime_ = 0;
+    connectEndTime_ = 0;
     wifiConnected = false;
     wasConnected = false;
-    connectionAttemptInProgress_ = false;
     pendingSsid_ = "";
     pendingPassword_ = "";
     onConnected_ = {};
@@ -51,7 +56,7 @@ void NetworkControl::shutdown() {
     ESP_LOGI(TAG, "WiFi control shutdown complete");
 }
 
-bool NetworkControl::isReady() const { return const_cast<NetworkControl *>(this)->isConnected(); }
+bool NetworkControl::isReady() const { return initialized_; }
 
 void NetworkControl::randomizeMACAddress() {
     uint8_t newMAC[6];
@@ -62,27 +67,27 @@ void NetworkControl::randomizeMACAddress() {
     ESP_LOGI(TAG, "esp_wifi_set_mac ret: %d", ret);
 
     switch (ret) {
-        case ESP_OK:
-            ESP_LOGIx(TAG, "New MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", newMAC[0], newMAC[1], newMAC[2], newMAC[3], newMAC[4], newMAC[5]);
-            break;
-        case ESP_ERR_INVALID_ARG:
-            ESP_LOGE(TAG, "Invalid argument");
-            break;
-        case ESP_ERR_WIFI_NOT_INIT:
-            ESP_LOGE(TAG, "WiFi not initialized");
-            break;
-        case ESP_ERR_WIFI_IF:
-            ESP_LOGE(TAG, "WiFi not started");
-            break;
-        case ESP_ERR_WIFI_MAC:
-            ESP_LOGE(TAG, "Invalid mac address");
-            break;
-        case ESP_ERR_WIFI_MODE:
-            ESP_LOGE(TAG, "WiFi mode is wrong");
-            break;
-        default:
-            ESP_LOGE(TAG, "Unknown error");
-            break;
+    case ESP_OK:
+        ESP_LOGIx(TAG, "New MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", newMAC[0], newMAC[1], newMAC[2], newMAC[3], newMAC[4], newMAC[5]);
+        break;
+    case ESP_ERR_INVALID_ARG:
+        ESP_LOGE(TAG, "Invalid argument");
+        break;
+    case ESP_ERR_WIFI_NOT_INIT:
+        ESP_LOGE(TAG, "WiFi not initialized");
+        break;
+    case ESP_ERR_WIFI_IF:
+        ESP_LOGE(TAG, "WiFi not started");
+        break;
+    case ESP_ERR_WIFI_MAC:
+        ESP_LOGE(TAG, "Invalid mac address");
+        break;
+    case ESP_ERR_WIFI_MODE:
+        ESP_LOGE(TAG, "WiFi mode is wrong");
+        break;
+    default:
+        ESP_LOGE(TAG, "Unknown error");
+        break;
     }
     return;
 }
@@ -101,6 +106,7 @@ bool NetworkControl::begin() {
         return false;
     }
 
+    initialized_ = true;
     // Driver initialized successfully, but not connected (following simplified architecture)
     return true;
 }
@@ -160,12 +166,13 @@ bool NetworkControl::connectToNetwork(const String &ssid, const String &password
     }
 
     ESP_LOGI(TAG, "Starting WiFi.begin to: %s with password: %s", ssid.c_str(), password.c_str());
+    connecting_ = true;
+    connectStartTime_ = millis();
+    connectEndTime_ = 0;
     // Keep credentials in memory and persist only when connected
     pendingSsid_ = ssid;
     pendingPassword_ = password;
     WiFi.begin(ssid.c_str(), password.c_str());
-    connectionAttemptInProgress_ = true;
-    connectionStartTime_ = millis();
     return true;
 }
 
@@ -213,12 +220,6 @@ void NetworkControl::clearCredentials() {
     ESP_LOGI(TAG, "Credentials cleared");
 }
 
-bool NetworkControl::isConnected() { return WiFi.status() == WL_CONNECTED; }
-
-wl_status_t NetworkControl::getStatus() { return WiFi.status(); }
-
-IPAddress NetworkControl::getIP() { return WiFi.localIP(); }
-
 bool NetworkControl::hasSavedCredentials() const {
     // Open preferences in read-only mode without altering state
     const_cast<Preferences &>(preferences).end();
@@ -229,6 +230,12 @@ bool NetworkControl::hasSavedCredentials() const {
     const_cast<Preferences &>(preferences).end();
     return ssid.length() > 0;
 }
+
+bool NetworkControl::isConnected() { return WiFi.status() == WL_CONNECTED; }
+
+wl_status_t NetworkControl::getStatus() { return WiFi.status(); }
+
+IPAddress NetworkControl::getIP() { return WiFi.localIP(); }
 
 void NetworkControl::tick() {
     unsigned long currentTime = millis();
@@ -248,10 +255,12 @@ void NetworkControl::tick() {
         // If we just got connected
         else if (!wasConnected && currentlyConnected) {
             ESP_LOGI(TAG, "Connection restored! IP: %s", WiFi.localIP().toString().c_str());
+            connecting_ = false;
+            connectEndTime_ = millis();
+            
             wifiConnected = true;
             lastDisconnectionTime = 0;
-            connectionAttemptInProgress_ = false;
-            
+
             // Set DNS for faster DNS resolution
             WiFi.setDNS(IPAddress(8, 8, 8, 8), IPAddress(114, 114, 114, 114));
 
@@ -262,7 +271,7 @@ void NetworkControl::tick() {
                 delay(200);
                 time(&now);
             }
-            
+
             // Persist pending credentials if present
             if (pendingSsid_.length() > 0) {
                 saveCredentials(pendingSsid_, pendingPassword_);
@@ -278,25 +287,6 @@ void NetworkControl::tick() {
         wasConnected = currentlyConnected;
     }
 
-    // Handle connection timeout/failure
-    if (connectionAttemptInProgress_) {
-        if (WiFi.status() == WL_CONNECTED) {
-            connectionAttemptInProgress_ = false;
-        } else if (millis() - connectionStartTime_ > connectionTimeoutMs_) {
-            ESP_LOGE(TAG, "Connection attempt timed out");
-            connectionAttemptInProgress_ = false;
-            // Stop any internal auto-retry from WiFi stack
-            WiFi.setAutoReconnect(false);
-            WiFi.persistent(false);
-            WiFi.disconnect(true, true);
-            // Clear pending credentials (they were not persisted)
-            pendingSsid_ = "";
-            pendingPassword_ = "";
-            if (onConnectionFailed_) {
-                onConnectionFailed_();
-            }
-        }
-    }
 }
 
 } // namespace dict

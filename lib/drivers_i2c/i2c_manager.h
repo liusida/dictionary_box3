@@ -1,7 +1,7 @@
 #pragma once
-
+#include "common.h"
 #include "Wire.h"
-#include "log.h"
+#include "core_misc/log.h"
 
 namespace dict {
 

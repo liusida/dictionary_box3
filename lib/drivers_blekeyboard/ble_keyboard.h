@@ -1,7 +1,6 @@
 #pragma once
-
-#include "Preferences.h"
-#include <Arduino.h>
+#include "common.h"
+#include <Preferences.h>
 #include <NimBLEDevice.h>
 #include <functional>
 
@@ -27,6 +26,9 @@ class BLEKeyboard {
     // Main functionality methods
     void begin(uint32_t scanRestartIntervalMs = 0); // Start BLE scanning with optional restart interval
     void startScan(); // Begin scanning for BLE keyboard devices
+    bool isScanning() const { return scanning_; }
+    uint32_t getScanStartTime() const { return scanStartTime_; }
+    uint32_t getScanEndTime() const { return scanEndTime_; }
     bool isConnected() const; // Check if connected to a BLE keyboard
     bool connectToDevice(const String& deviceName); // Connect to specific device by name
     void setKeyCallback(const KeyCallback& callback) { keyCallback = callback; } // Set callback for key events
@@ -43,6 +45,10 @@ class BLEKeyboard {
 
   private:
     // Private member variables
+    bool initialized_;
+    bool scanning_;
+    uint32_t scanStartTime_;
+    uint32_t scanEndTime_;
     const NimBLEAdvertisedDevice *advDevice;
     bool doConnect;
     int powerLevel;

@@ -1,5 +1,5 @@
 #include "display_helper.h"
-#include "log.h"
+#include "core_misc/log.h"
 
 namespace dict {
 
@@ -15,8 +15,8 @@ void manualResetDisplay() {
   digitalWrite(TFT_MANUAL_RST, LOW);
   delay(10); // Short delay
   
-  // Turn on backlight
-  digitalWrite(TFT_BL, HIGH);
+  // Turn on backlight ( Let's do this manually after tft set background to white in display_manager. )
+  // digitalWrite(TFT_BL, HIGH);
   
   ESP_LOGI("Utils", "Display reset and backlight enabled");
 }

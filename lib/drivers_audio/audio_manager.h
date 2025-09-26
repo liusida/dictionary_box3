@@ -1,20 +1,18 @@
 #pragma once
-
-#define HELIX_LOG_LEVEL LogLevelHelix::Warning
-
-#include <Arduino.h>
+#include "common.h"
+#include "core_eventing/event_publisher.h"
+#include "core_eventing/events.h"
+#include "audio_source_littlefs_mounted.h"
 #include <WiFi.h>
+#include "LittleFS.h"
+#define HELIX_LOG_LEVEL LogLevelHelix::Warning
 #include "AudioTools.h"
 #include "AudioTools/AudioLibs/AudioBoardStream.h"
 #include "AudioTools/AudioCodecs/CodecMP3Helix.h"
 #include "AudioTools/CoreAudio/AudioHttp/URLStream.h"
 #include "AudioTools/CoreAudio/AudioPlayer.h"
 #include "AudioTools/Disk/AudioSourceURL.h"
-#include "AudioTools/Disk/AudioSourceLittleFS.h"
-#include "LittleFS.h"
-#include "audio_source_littlefs_mounted.h"
-#include "event_publisher.h"
-#include "events.h"
+
 
 namespace dict {
 
@@ -28,7 +26,7 @@ public:
     bool initialize(); // Initialize audio system and ES8311 codec
     void shutdown(); // Clean shutdown of audio system and free resources
     void tick(); // Process audio events and state updates
-    bool isReady() const; // Check if audio system is ready for playback
+    bool isReady() const { return initialized_; } // Check if audio system is ready for playback
     
     // Audio playback methods
     bool play(const char* url); // Play audio from URL or local file path
@@ -56,7 +54,7 @@ private:
     URLStream urlStream;
     
     // State management
-    bool isInitialized;
+    bool initialized_;
     bool isPlaying;
     String currentUrl;
     

@@ -1,5 +1,5 @@
 #include "ui_status.h"
-#include "log.h"
+#include "core_misc/log.h"
 
 namespace dict {
 
@@ -7,7 +7,7 @@ static const char* TAG = "StatusOverlay";
 
 StatusOverlay::StatusOverlay()
     : container_(nullptr), wifiIndicator_(nullptr), bleIndicator_(nullptr), audioIndicator_(nullptr),
-      attachedScreen_(nullptr), initialized_(false), visible_(false), indicatorSize_(20),
+      attachedScreen_(nullptr), initialized_(false), visible_(false), indicatorSize_(10),
       animationDuration_(300), wifiConnected_(false), bleConnected_(false), audioPlaying_(false),
       wifiColor_(lv_color_hex(0x0ABF0F)), bleColor_(lv_color_hex(0x4098F2)), audioColor_(lv_color_hex(0xCE45DC)),
       wifiBlinking_(false), bleBlinking_(false), audioBlinking_(false), blinkInterval_(200), 

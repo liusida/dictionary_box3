@@ -1,7 +1,7 @@
 #include "display_manager.h"
 #include "lvgl_helper.h"
 #include "display_helper.h"
-#include "log.h"
+#include "core_misc/log.h"
 
 namespace dict {
 
@@ -27,6 +27,8 @@ bool DisplayManager::initialize() {
     
     tft_.init();
     tft_.setRotation(3);
+    tft_.fillScreen(TFT_WHITE);
+    setBacklight(true);
     displayInitialized_ = true;
     
     if (!initTouch()) {
