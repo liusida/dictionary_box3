@@ -279,6 +279,16 @@ bool AudioManager::stop() {
         isPlaying = false;
         currentUrl = "";
 
+        // Wait for audio task to finish current operation
+        if (audioTaskHandle) {
+            // Give the audio task a chance to see isPlaying = false
+            vTaskDelay(pdMS_TO_TICKS(100));
+            
+            // Wait for audio task to finish
+            vTaskDelete(audioTaskHandle);
+            audioTaskHandle = nullptr;
+        }
+
         // Clean up playback streams (not system resources)
         if (url) {
             url->end(); // Close HTTP connection
