@@ -134,7 +134,7 @@ bool NetworkControl::connectWithSavedCredentials() {
         ESP_LOGI(TAG, "Connected! IP address: %s", WiFi.localIP().toString().c_str());
 
         // Publish WiFi connected event
-        core::eventing::EventPublisher::instance().publish(core::eventing::WiFiEvent(core::eventing::WiFiEvent::Connected, ssid, WiFi.localIP()));
+        EventPublisher::instance().publish(WiFiEvent(WiFiEvent::Connected, ssid, WiFi.localIP()));
 
         // Set DNS for faster DNS resolution
         WiFi.setDNS(IPAddress(8, 8, 8, 8), IPAddress(114, 114, 114, 114));

@@ -33,9 +33,9 @@ void addObjectToDefaultGroup(lv_obj_t *obj) {
 // --- Key handling from KeyEvent bus ---
 static void (*s_onSubmit)() = nullptr;
 static void (*s_onKeyIn)(char) = nullptr;
-static core::eventing::EventBus<core::eventing::KeyEvent>::ListenerId s_keyListenerId = 0;
+static EventBus<KeyEvent>::ListenerId s_keyListenerId = 0;
 
-static void handleKeyEvent(const core::eventing::KeyEvent& ev) {
+static void handleKeyEvent(const KeyEvent& ev) {
     if (!ev.valid) return;
     char key = ev.key;
     lv_group_t *group = lv_group_get_default();
@@ -61,7 +61,7 @@ static void handleKeyEvent(const core::eventing::KeyEvent& ev) {
 void lvglInstallKeyEventHandler(void (*onSubmit)(), void (*onKeyIn)(char)) {
     s_onSubmit = onSubmit;
     s_onKeyIn = onKeyIn;
-    auto& bus = core::eventing::EventSystem::instance().getEventBus<core::eventing::KeyEvent>();
+    auto& bus = EventSystem::instance().getEventBus<KeyEvent>();
     s_keyListenerId = bus.subscribe(handleKeyEvent);
 }
 

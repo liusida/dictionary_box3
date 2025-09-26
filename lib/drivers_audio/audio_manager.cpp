@@ -185,8 +185,8 @@ bool AudioManager::play(const char *urlStr) {
             isPlaying = true;
             
             // Publish audio event
-            core::eventing::EventPublisher::instance().publish(
-                core::eventing::AudioEvent(core::eventing::AudioEvent::PlaybackStarted, String(urlStr))
+            EventPublisher::instance().publish(
+                AudioEvent(AudioEvent::PlaybackStarted, String(urlStr))
             );
             ESP_LOGI(TAG, "Audio playback started - isPlaying=%d", isPlaying);
             
@@ -257,8 +257,8 @@ bool AudioManager::play(const char *urlStr) {
         isPlaying = true;
 
         // Publish audio event
-        core::eventing::EventPublisher::instance().publish(
-            core::eventing::AudioEvent(core::eventing::AudioEvent::PlaybackStarted, String(urlStr))
+        EventPublisher::instance().publish(
+            AudioEvent(AudioEvent::PlaybackStarted, String(urlStr))
         );
         ESP_LOGI(TAG, "Audio playback started - isPlaying=%d", isPlaying);
 
@@ -312,8 +312,8 @@ bool AudioManager::stop() {
         // out.setAudioInfo(info);
 
         // Publish audio event
-        core::eventing::EventPublisher::instance().publish(
-            core::eventing::AudioEvent(core::eventing::AudioEvent::PlaybackStopped, currentUrl)
+        EventPublisher::instance().publish(
+            AudioEvent(AudioEvent::PlaybackStopped, currentUrl)
         );
 
         ESP_LOGI(TAG, "Audio playback stopped");

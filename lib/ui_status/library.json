@@ -1,0 +1,19 @@
+{
+  "name": "ui_status",
+  "version": "0.1.0",
+  "description": "Status overlay UI library for WiFi, BLE, and audio indicators",
+  "keywords": ["ui", "status", "overlay", "indicators", "wifi", "ble", "audio"],
+  "authors": [
+    { "name": "Dictionary_v2" }
+  ],
+  "license": "MIT",
+  "frameworks": ["arduino"],
+  "platforms": ["espressif32"],
+  "dependencies": [
+    { "name": "core_log", "version": ">=0.1.0" },
+    { "name": "drivers_display", "version": ">=0.1.0" },
+    { "name": "drivers_network", "version": ">=0.1.0" },
+    { "name": "drivers_blekeyboard", "version": ">=0.1.0" },
+    { "name": "drivers_audio", "version": ">=0.1.0" }
+  ]
+}
