@@ -10,6 +10,8 @@
 
 namespace dict {
 
+using KeyCallback = std::function<void(char key, uint8_t keyCode, uint8_t modifiers)>;
+
 class BLEKeyboard {
   public:
     // Constructor/Destructor
@@ -56,7 +58,6 @@ class BLEKeyboard {
     ClientCallbacks *clientCallbacks;
     ScanCallbacks *scanCallbacks;
 
-    using KeyCallback = std::function<void(char key, uint8_t keyCode, uint8_t modifiers)>;
     KeyCallback keyCallback;
 
     // Private methods
