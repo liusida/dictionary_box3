@@ -1,12 +1,12 @@
-#include <Arduino.h>
-#include <unity.h>
 #include "../../lib/api_dictionary/dictionary_api.h"
-#include "../../lib/core_misc/memory_test_helper.h"
 #include "../../lib/core_eventing/event_system.h"
 #include "../../lib/core_eventing/events.h"
-#include <WiFi.h>
+#include "../../lib/core_misc/memory_test_helper.h"
 #include "network_control.h"
 #include "test_wifi_credentials.h"
+#include <Arduino.h>
+#include <WiFi.h>
+#include <unity.h>
 
 using namespace dict;
 
@@ -53,15 +53,17 @@ void test_dictionary_api_event_cleanup(void);
 
 #define TAG "DictionaryApiTest"
 
-// Global WiFi connection state
-NetworkControl g_nc;
+namespace dict {
+// Global objects for the test
+NetworkControl *g_network = nullptr;
+} // namespace dict
 
 // =================================== TEST SETUP ===================================
 
 void setUp(void) {
     // Record memory state before each test
     setUpMemoryMonitoring();
-    
+
     // Clear event system
     EventSystem::instance().getEventBus<DictionaryEvent>().clear();
 }
@@ -73,34 +75,34 @@ void tearDown(void) {
 
 bool setupWiFi() {
     ESP_LOGI(TAG, "Setting up WiFi for testing...");
-    
-    
-    g_nc.initialize();
-    g_nc.randomizeMACAddress();
+
+    g_network = new NetworkControl();
+    g_network->initialize();
+    g_network->randomizeMACAddress();
 
     // Ensure a clean state
-    g_nc.clearCredentials();
+    g_network->clearCredentials();
 
     volatile bool connectedFired = false;
     volatile bool failedFired = false;
     IPAddress connectedIp;
 
-    g_nc.setOnConnected([&](const IPAddress& ip){ connectedFired = true; });
-    g_nc.setOnConnectionFailed([&](){ failedFired = true; });
+    g_network->setOnConnected([&](const IPAddress &ip) { connectedFired = true; });
+    g_network->setOnConnectionFailed([&]() { failedFired = true; });
 
-    TEST_ASSERT_TRUE_MESSAGE(g_nc.connectToNetwork(TEST_WIFI_SSID, TEST_WIFI_PASSWORD), "WiFi.begin should be invoked successfully");
+    TEST_ASSERT_TRUE_MESSAGE(g_network->connectToNetwork(TEST_WIFI_SSID, TEST_WIFI_PASSWORD), "WiFi.begin should be invoked successfully");
 
     // Loop tick until a callback fires or timeout (15s)
     unsigned long start = millis();
     while (!connectedFired && !failedFired && millis() - start < 15000) {
-        g_nc.tick();
+        g_network->tick();
         delay(100);
     }
 
     TEST_ASSERT_FALSE_MESSAGE(failedFired, "Connection failed callback fired");
     TEST_ASSERT_TRUE_MESSAGE(connectedFired, "Connected callback did not fire within timeout");
     if (connectedFired) {
-        ESP_LOGI(TAG, "Connected. IP: %s", g_nc.getIP().toString().c_str());
+        ESP_LOGI(TAG, "Connected. IP: %s", g_network->getIP().toString().c_str());
     }
 
     ESP_LOGI(TAG, "WiFi setup complete");
@@ -110,18 +112,18 @@ bool setupWiFi() {
 void setup() {
     Serial.begin(115200);
     delay(1000);
-    
+
     // Setup WiFi for testing
     if (!setupWiFi()) {
         ESP_LOGE(TAG, "Failed to setup WiFi - some tests may fail");
         return;
     }
-    
+
     // Print test suite memory summary
     printTestSuiteMemorySummary("DictionaryApi", true);
-    
+
     UNITY_BEGIN();
-    
+
     // Core Functionality Tests
     RUN_TEST_EX(TAG, test_dictionary_api_constructor_destructor);
     RUN_TEST_EX(TAG, test_dictionary_api_initialize_and_ready);
@@ -131,22 +133,22 @@ void setup() {
     RUN_TEST_EX(TAG, test_dictionary_api_configuration);
     RUN_TEST_EX(TAG, test_dictionary_api_ready_state);
     RUN_TEST_EX(TAG, test_dictionary_api_error_handling);
-    
+
     // Audio URL Tests
     RUN_TEST_EX(TAG, test_dictionary_api_audio_url_configuration);
     RUN_TEST_EX(TAG, test_dictionary_api_audio_url_generation);
     RUN_TEST_EX(TAG, test_dictionary_api_audio_url_types);
     RUN_TEST_EX(TAG, test_dictionary_api_audio_url_error_handling);
-    
+
     // Event System Tests
     RUN_TEST_EX(TAG, test_dictionary_api_event_publishing);
     RUN_TEST_EX(TAG, test_dictionary_api_event_lookup_started);
     RUN_TEST_EX(TAG, test_dictionary_api_event_audio_requested);
     RUN_TEST_EX(TAG, test_dictionary_api_event_multiple_subscribers);
     RUN_TEST_EX(TAG, test_dictionary_api_event_cleanup);
-    
+
     UNITY_END();
-    
+
     // Print test suite memory summary
     printTestSuiteMemorySummary("DictionaryApi", false);
 }

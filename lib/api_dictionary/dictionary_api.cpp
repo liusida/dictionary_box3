@@ -11,13 +11,21 @@ namespace dict {
 static const char *TAG = "DictionaryApi";
 
 DictionaryApi::DictionaryApi() 
-    : baseUrl_("https://dict.liusida.com/api/define"),
+    : hostname_("dict.liusida.com"),
+      baseUrl_("https://dict.liusida.com/api/define"),
       audioBaseUrl_("https://dict.liusida.com/api/audio/stream"),
-      initialized_(false) {
+      initialized_(false),
+      prewarmTaskHandle_(nullptr) {
 }
 
 DictionaryApi::~DictionaryApi() {
     shutdown();
+    
+    // Clean up prewarm task if it exists
+    if (prewarmTaskHandle_ != nullptr) {
+        vTaskDelete(prewarmTaskHandle_);
+        prewarmTaskHandle_ = nullptr;
+    }
 }
 
 bool DictionaryApi::initialize() {
@@ -60,14 +68,22 @@ DictionaryResult DictionaryApi::lookupWord(const String& word) {
     EventPublisher::instance().publish(DictionaryEvent(DictionaryEvent::LookupStarted, word));
     
     // Build JSON body
-    JsonDocument doc;
-    doc["word"] = word;
+    JsonDocument* doc = (JsonDocument*)ps_malloc(sizeof(JsonDocument)); //save some SRAM by using ps_malloc
+    if (!doc) {
+        ESP_LOGE(TAG, "Failed to allocate JSON doc in PSRAM");
+        return DictionaryResult();
+    }
+    new(doc) JsonDocument();
+    (*doc)["word"] = word;
     String body;
-    serializeJson(doc, body);
+    serializeJson(*doc, body);
+    doc->~JsonDocument();
+    free(doc);
     
     WiFiClientSecure client;
     client.setInsecure();
     HTTPClient https;
+    https.setReuse(false);
     
     if (!https.begin(client, baseUrl_.c_str())) {
         ESP_LOGE(TAG, "https.begin failed");
@@ -78,9 +94,23 @@ DictionaryResult DictionaryApi::lookupWord(const String& word) {
     int httpCode = https.POST(body);
     
     if (httpCode <= 0) {
-        ESP_LOGE(TAG, "POST failed: %s", https.errorToString(httpCode).c_str());
+        ESP_LOGE(TAG, "POST failed (1): %s", https.errorToString(httpCode).c_str());
         https.end();
-        return DictionaryResult();
+
+        WiFiClientSecure client1;
+        client1.setInsecure();
+        if (!https.begin(client1, baseUrl_.c_str())) {
+            ESP_LOGE(TAG, "https.begin failed");
+            return DictionaryResult();
+        }
+        
+        https.addHeader("Content-Type", "application/json");
+        httpCode = https.POST(body);
+        if (httpCode <= 0) {
+            ESP_LOGE(TAG, "POST failed (2): %s", https.errorToString(httpCode).c_str());
+            https.end();
+            return DictionaryResult();
+        }
     }
     
     if (httpCode != HTTP_CODE_OK) {
@@ -92,16 +122,28 @@ DictionaryResult DictionaryApi::lookupWord(const String& word) {
     String payload = https.getString();
     https.end();
     
-    JsonDocument resp;
-    DeserializationError err = deserializeJson(resp, payload);
+    ESP_LOGD(TAG, "Payload: %s", payload.c_str());
+    if (payload.length() == 0) {
+        ESP_LOGE(TAG, "Payload is empty");
+        return DictionaryResult();
+    }
+
+    JsonDocument* resp = (JsonDocument*)ps_malloc(sizeof(JsonDocument));
+    if (!resp) {
+        ESP_LOGE(TAG, "Failed to allocate response JSON in PSRAM");
+        return DictionaryResult();
+    }
+    new(resp) JsonDocument();
+    DeserializationError err = deserializeJson(*resp, payload);
     if (err) {
         ESP_LOGE(TAG, "JSON parse error: %s", err.c_str());
+        free(resp);
         return DictionaryResult();
     }
     
-    String outWord = resp["word"].isNull() ? String("") : resp["word"].as<String>();
-    String outExplanation = resp["explanation"].isNull() ? String("") : resp["explanation"].as<String>();
-    String outSampleSentence = resp["sample_sentence"].isNull() ? String("") : resp["sample_sentence"].as<String>();
+    String outWord = (*resp)["word"].isNull() ? String("") : (*resp)["word"].as<String>();
+    String outExplanation = (*resp)["explanation"].isNull() ? String("") : (*resp)["explanation"].as<String>();
+    String outSampleSentence = (*resp)["sample_sentence"].isNull() ? String("") : (*resp)["sample_sentence"].as<String>();
     
     // Handle null values
     if (outSampleSentence.equalsIgnoreCase("null")) outSampleSentence = "";
@@ -110,21 +152,23 @@ DictionaryResult DictionaryApi::lookupWord(const String& word) {
     
     // Fallbacks for sample sentence under alternate JSON shapes
     if (outSampleSentence.length() == 0) {
-        if (resp["sampleSentence"].is<const char*>()) {
-            outSampleSentence = resp["sampleSentence"].as<String>();
-        } else if (resp["sample"].is<const char*>()) {
-            outSampleSentence = resp["sample"].as<String>();
-        } else if (resp["sentence"].is<const char*>()) {
-            outSampleSentence = resp["sentence"].as<String>();
-        } else if (resp["example"].is<const char*>()) {
-            outSampleSentence = resp["example"].as<String>();
-        } else if (resp["examples"].is<JsonArray>() && resp["examples"].size() > 0) {
-            outSampleSentence = resp["examples"][0].as<String>();
-        } else if (resp["samples"].is<JsonArray>() && resp["samples"].size() > 0) {
-            outSampleSentence = resp["samples"][0].as<String>();
+        if ((*resp)["sampleSentence"].is<const char*>()) {
+            outSampleSentence = (*resp)["sampleSentence"].as<String>();
+        } else if ((*resp)["sample"].is<const char*>()) {
+            outSampleSentence = (*resp)["sample"].as<String>();
+        } else if ((*resp)["sentence"].is<const char*>()) {
+            outSampleSentence = (*resp)["sentence"].as<String>();
+        } else if ((*resp)["example"].is<const char*>()) {
+            outSampleSentence = (*resp)["example"].as<String>();
+        } else if ((*resp)["examples"].is<JsonArray>() && (*resp)["examples"].size() > 0) {
+            outSampleSentence = (*resp)["examples"][0].as<String>();
+        } else if ((*resp)["samples"].is<JsonArray>() && (*resp)["samples"].size() > 0) {
+            outSampleSentence = (*resp)["samples"][0].as<String>();
         }
         if (outSampleSentence.equalsIgnoreCase("null")) outSampleSentence = "";
     }
+    resp->~JsonDocument();
+    free(resp);
     
     ESP_LOGD(TAG, "Parsed JSON -> word len: %d, expl len: %d, sample len: %d",
              outWord.length(), outExplanation.length(), outSampleSentence.length());
@@ -167,6 +211,9 @@ AudioUrl DictionaryApi::getAudioUrl(const String& word, const String& audioType)
     String encodedAudioType = urlEncode(audioType);
     if (encodedAudioType.length() == 0) {
         return AudioUrl();
+    }
+    if (encodedAudioType.equalsIgnoreCase("sample_sentence")) {
+        encodedAudioType = "sample";
     }
     
     String url = audioBaseUrl_ + "?word=" + encodedWord + "&type=" + encodedAudioType;
@@ -220,6 +267,55 @@ String DictionaryApi::urlEncode(const String& str) {
         }
     }
     return out;
+}
+
+void DictionaryApi::prewarm() {
+    // If task is already running, don't create another one
+    if (prewarmTaskHandle_ != nullptr) {
+        ESP_LOGW(TAG, "Prewarm task already running");
+        return;
+    }
+    
+    // Create async task for prewarm operation
+    BaseType_t result = xTaskCreatePinnedToCore(
+        prewarmTask,           // Task function
+        "prewarm_task",        // Task name
+        4096,                  // Stack size
+        this,                  // Parameter (this instance)
+        1,                     // Priority (low priority)
+        &prewarmTaskHandle_,   // Task handle
+        0                      // Core (0 or 1)
+    );
+    
+    if (result != pdPASS) {
+        ESP_LOGE(TAG, "Failed to create prewarm task");
+        prewarmTaskHandle_ = nullptr;
+    } else {
+        ESP_LOGI(TAG, "Prewarm task created successfully");
+    }
+}
+
+void DictionaryApi::prewarmTask(void* parameter) {
+    DictionaryApi* api = static_cast<DictionaryApi*>(parameter);
+    
+    ESP_LOGI(TAG, "Starting async prewarm operation");
+    
+    // Perform the actual prewarm connection
+    WiFiClientSecure client;
+    client.setInsecure();
+    
+    if (client.connect(api->hostname_.c_str(), 443)) {
+        ESP_LOGI(TAG, "Prewarm connection successful");
+        client.stop();
+    } else {
+        ESP_LOGW(TAG, "Prewarm connection failed");
+    }
+    
+    ESP_LOGI(TAG, "Async prewarm operation completed");
+    
+    // Clean up task handle and delete self
+    api->prewarmTaskHandle_ = nullptr;
+    vTaskDelete(nullptr);
 }
 
 bool DictionaryApi::isWordValid(const String& word) {

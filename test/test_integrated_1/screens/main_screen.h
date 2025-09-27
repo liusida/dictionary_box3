@@ -1,5 +1,6 @@
 #pragma once
 #include "api_dictionary/dictionary_api.h"
+#include "core_eventing/events.h"
 
 namespace dict {
 
@@ -21,7 +22,9 @@ public:
 
     void onSubmit();
     void onKeyIn(char key);
-    
+    void onFunctionKeyEvent(const FunctionKeyEvent& event);
+    void onConnectionReady();
+
 private:
     bool initialized_;
     bool visible_;

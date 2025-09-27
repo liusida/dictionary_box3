@@ -11,7 +11,6 @@ public:
     template<typename T>
     void publish(const T& event) {
         eventSystem_.getEventBus<T>().publish(event);
-        ESP_LOGD(TAG, "Published event");
     }
 
 private:

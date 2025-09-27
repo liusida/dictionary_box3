@@ -2,8 +2,14 @@
 #include "core_eventing/event_system.h"
 #include "core_eventing/events.h"
 #include "core_misc/log.h"
+#include "core_misc/utils.h"
+#include "audio_manager.h" // can't use -I lib, should sort out later
 
 namespace dict {
+
+static const char *TAG = "LVGLHelper";
+
+extern AudioManager* g_audio;
 
 lv_group_t *getDefaultGroup() {
     lv_group_t *default_group = lv_group_get_default();
@@ -14,13 +20,6 @@ lv_group_t *getDefaultGroup() {
     return default_group;
 }
 
-void loadScreen(lv_obj_t *screen) {
-    lv_disp_load_scr(screen);
-    lv_group_t *default_group = getDefaultGroup();
-    lv_group_remove_all_objs(default_group);
-    delay(100);
-}
-
 void addObjectToDefaultGroup(lv_obj_t *obj) {
     if (obj == nullptr) {
         return;
@@ -29,10 +28,20 @@ void addObjectToDefaultGroup(lv_obj_t *obj) {
     lv_group_add_obj(default_group, obj);
 }
 
+void loadScreen(lv_obj_t *screen) {
+    lv_disp_load_scr(screen);
+    lv_group_t *default_group = getDefaultGroup();
+    lv_group_remove_all_objs(default_group);
+    delay(100);
+}
+
+
 // --- Key handling from KeyEvent bus ---
-static SubmitCallback s_onSubmit;
-static KeyInCallback s_onKeyIn;
+static SubmitCallback s_onSubmit = nullptr;
+static KeyInCallback s_onKeyIn = nullptr;
 static EventBus<KeyEvent>::ListenerId s_keyListenerId = 0;
+static FunctionKeyCallback s_onFunctionKeyIn = nullptr;
+static EventBus<FunctionKeyEvent>::ListenerId s_functionKeyListenerId = 0;
 
 static void handleKeyEvent(const KeyEvent& ev) {
     if (!ev.valid) return;
@@ -42,7 +51,6 @@ static void handleKeyEvent(const KeyEvent& ev) {
     if (focused && lv_obj_has_class(focused, &lv_textarea_class)) {
         if (key == 0x08) {
             lv_textarea_delete_char(focused);
-            if (s_onKeyIn) s_onKeyIn(key);
         } else if (key == '\n') {
             lv_textarea_t *ta = (lv_textarea_t *)focused;
             if (ta->one_line) {
@@ -52,21 +60,59 @@ static void handleKeyEvent(const KeyEvent& ev) {
             }
         } else if (key >= 32 && key <= 126) {
             lv_textarea_add_char(focused, key);
-            if (s_onKeyIn) s_onKeyIn(key);
         }
+    }
+    if (key == 0x08 || (key >= 32 && key <= 126)) {
+        if (s_onKeyIn) s_onKeyIn(key);
     }
 }
 
-void lvglInstallKeyEventHandler(const SubmitCallback& onSubmit, const KeyInCallback& onKeyIn) {
-    s_onSubmit = onSubmit;
-    s_onKeyIn = onKeyIn;
+static void handleFunctionKeyEvent(const FunctionKeyEvent& ev) {
+    switch (ev.type) {
+        case FunctionKeyEvent::PrintMemoryStatus:
+            ESP_LOGI(TAG, "F1 pressed - printing memory status");
+            printMemoryStatus(); // You'd need to implement this
+            break;
+        case FunctionKeyEvent::VolumeDown:
+            ESP_LOGI(TAG, "F10 pressed - volume down");
+            g_audio->setVolume(g_audio->getVolume() - 0.05);
+            break;
+        case FunctionKeyEvent::VolumeUp:
+            ESP_LOGI(TAG, "F11 pressed - volume up");
+            g_audio->setVolume(g_audio->getVolume() + 0.05);
+            break;
+        case FunctionKeyEvent::ReadWord:
+            ESP_LOGI(TAG, "F2 pressed - read word");
+            if (s_onFunctionKeyIn) s_onFunctionKeyIn(FunctionKeyEvent::ReadWord);
+            break;
+        case FunctionKeyEvent::ReadExplanation:
+            ESP_LOGI(TAG, "F3 pressed - read explanation");
+            if (s_onFunctionKeyIn) s_onFunctionKeyIn(FunctionKeyEvent::ReadExplanation);
+            break;
+        case FunctionKeyEvent::ReadSampleSentence:
+            ESP_LOGI(TAG, "F4 pressed - read sample sentence");
+            if (s_onFunctionKeyIn) s_onFunctionKeyIn(FunctionKeyEvent::ReadSampleSentence);
+            break;
+        default:
+            break;
+    }
+}
+
+void lvglEnableKeyEventHandler() {
     auto& bus = EventSystem::instance().getEventBus<KeyEvent>();
     s_keyListenerId = bus.subscribe(handleKeyEvent);
+    
+    auto& funcBus = EventSystem::instance().getEventBus<FunctionKeyEvent>();
+    s_functionKeyListenerId = funcBus.subscribe(handleFunctionKeyEvent);
 }
 
 void lvglSetKeyCallbacks(const SubmitCallback& onSubmit, const KeyInCallback& onKeyIn) {
     s_onSubmit = onSubmit;
     s_onKeyIn = onKeyIn;
+}
+
+void lvglSetFunctionKeyCallbacks(const FunctionKeyCallback& onFunctionKeyIn) {
+    s_onFunctionKeyIn = onFunctionKeyIn;
 }
 
 void lvglRemoveKeyEventHandler() {
@@ -75,6 +121,13 @@ void lvglRemoveKeyEventHandler() {
     s_keyListenerId = 0;
     s_onSubmit = nullptr;
     s_onKeyIn = nullptr;
+}
+
+void lvglRemoveFunctionKeyEventHandler() {
+    auto& funcBus = EventSystem::instance().getEventBus<FunctionKeyEvent>();
+    funcBus.unsubscribe(s_functionKeyListenerId);
+    s_functionKeyListenerId = 0;
+    s_onFunctionKeyIn = nullptr;
 }
 
 } // namespace dict

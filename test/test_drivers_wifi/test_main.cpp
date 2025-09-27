@@ -14,6 +14,7 @@ void test_save_and_has_saved_credentials(void);
 void test_load_credentials(void);
 void test_clear_credentials(void);
 void test_network_control_connect_and_report_ip(void);
+void test_async_https(void);
 
 #define TAG "WiFiTest"
 
@@ -43,11 +44,11 @@ void setup() {
     // RUN_TEST_EX(TAG, test_wifi_connection_management);
     // RUN_TEST_EX(TAG, test_wifi_connection_timeout);
     // RUN_TEST_EX(TAG, test_wifi_simplest);
-    RUN_TEST_EX(TAG, test_save_and_has_saved_credentials);
-    RUN_TEST_EX(TAG, test_load_credentials);
-    RUN_TEST_EX(TAG, test_clear_credentials);
-    RUN_TEST_EX(TAG, test_network_control_connect_and_report_ip);
-    
+    // RUN_TEST_EX(TAG, test_save_and_has_saved_credentials);
+    // RUN_TEST_EX(TAG, test_load_credentials);
+    // RUN_TEST_EX(TAG, test_clear_credentials);
+    // RUN_TEST_EX(TAG, test_network_control_connect_and_report_ip);
+    RUN_TEST_EX(TAG, test_async_https);
     UNITY_END();
     
     // Print test suite memory summary

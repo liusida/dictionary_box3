@@ -30,6 +30,9 @@ public:
     wl_status_t getStatus(); // Get current WiFi connection status
     IPAddress getIP(); // Get current IP address
     bool connectToNetwork(const String& ssid, const String& password); // Connect to specific network
+    WiFiClientSecure& getClient() { return client; } // Get the HTTPS client
+    void randomizeMACAddress(); // Randomize WiFi MAC address for privacy
+    void setCACertBundle(WiFiClientSecure& client);
     
     // Credential management methods
     void saveCredentials(const String& ssid, const String& password); // Save WiFi credentials to NVS
@@ -45,7 +48,9 @@ public:
     using ConnectionFailedCallback = std::function<void()>;
     void setOnConnected(const ConnectedCallback& cb) { onConnected_ = cb; } // Set callback for successful connection
     void setOnConnectionFailed(const ConnectionFailedCallback& cb) { onConnectionFailed_ = cb; } // Set callback for connection failure
-    void randomizeMACAddress(); // Randomize WiFi MAC address for privacy
+    
+    // Event callbacks
+    void onWiFiEvent(arduino_event_id_t event, arduino_event_info_t info);
 
 private:
     Preferences preferences;

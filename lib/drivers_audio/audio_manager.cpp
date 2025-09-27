@@ -2,15 +2,18 @@
 #include "core_eventing/event_publisher.h"
 #include "core_misc/log.h"
 #include "drivers_i2c/i2c_manager.h"
+#include "network_control.h"
 
 namespace dict {
 
 static const char *TAG = "AudioManager";
 
+extern NetworkControl* g_network;
+
 AudioManager::AudioManager()
     : board(AudioDriverES8311, NoPins), out(board), info(32000, 2, 16), 
       player(nullptr), decoder(), urlSource(nullptr), fileSource(nullptr), 
-      urlStream(), initialized_(false), isPlaying(false), currentUrl("") {
+      urlStream(), initialized_(false), isPlaying(false), currentUrl(""), volume_(0.7f) {
 }
 
 AudioManager::~AudioManager() {
@@ -94,9 +97,9 @@ void AudioManager::tick() {
     if (!initialized_ || !player) {
         return;
     }
-
-    // Let AudioPlayer handle all processing
-    player->copy();
+    if (player->getStream() && player->getStream()->available()) {
+        player->copy();
+    }
 }
 
 bool AudioManager::play(const char* url) {
@@ -194,9 +197,9 @@ void AudioManager::setVolume(float volume) {
     
     if (volume < 0.0f) volume = 0.0f;
     if (volume > 1.0f) volume = 1.0f;
-    
-    player->setVolume(volume);
-    ESP_LOGI(TAG, "Volume set to: %.2f", volume);
+    volume_ = volume;
+    out.setVolume(volume_);
+    ESP_LOGI(TAG, "Volume set to: %.2f", volume_);
 }
 
 bool AudioManager::isUrl(const char* path) const {
@@ -205,11 +208,15 @@ bool AudioManager::isUrl(const char* path) const {
 
 void AudioManager::createUrlSource(const char* url) {
     ESP_LOGI(TAG, "Creating URL source for: %s", url);
-    
+
+    WiFiClientSecure client;
+    client.setInsecure();
+    urlStream.setClient(client);
+
     // Create URL source with single URL
-    const char* urls[] = { url };
-    urlSource = new AudioSourceURL(urlStream, urls, "audio/mp3");
-    
+    urlSource = new AudioSourceDynamicURLNoAutoNext(urlStream, "audio/mp3");
+    urlSource->addURL(url);
+
     if (!urlSource) {
         ESP_LOGE(TAG, "Failed to create AudioSourceURL");
     }

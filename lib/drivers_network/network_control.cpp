@@ -98,7 +98,9 @@ bool NetworkControl::begin() {
     WiFi.setAutoReconnect(false);
     WiFi.mode(WIFI_STA);
     client.setCACertBundle(certs_x509_crt_bundle_start, certs_x509_crt_bundle_end - certs_x509_crt_bundle_start);
-
+    WiFi.onEvent([this](arduino_event_id_t event, arduino_event_info_t info) {
+        this->onWiFiEvent(event, info);
+    });
     // Initialize preferences for NVS storage (close first if already open)
     preferences.end();
     if (!preferences.begin("wifi_config", false)) {
@@ -257,7 +259,7 @@ void NetworkControl::tick() {
             ESP_LOGI(TAG, "Connection restored! IP: %s", WiFi.localIP().toString().c_str());
             connecting_ = false;
             connectEndTime_ = millis();
-            
+
             wifiConnected = true;
             lastDisconnectionTime = 0;
 
@@ -287,6 +289,42 @@ void NetworkControl::tick() {
         wasConnected = currentlyConnected;
     }
 
+}
+
+void NetworkControl::onWiFiEvent(arduino_event_id_t event, arduino_event_info_t info) {
+    switch (event) {
+        case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+            ESP_LOGW(TAG, "WiFi disconnected");
+            if (connecting_) {
+                connecting_ = false;
+                connectEndTime_ = millis();
+                
+                if (onConnectionFailed_) {
+                    onConnectionFailed_();
+                }
+            }
+            break;
+            
+        case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+            ESP_LOGI(TAG, "WiFi connected to AP");
+            connecting_ = false;
+            connectEndTime_ = millis();
+            break;
+            
+        case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+            ESP_LOGI(TAG, "WiFi got IP address");
+            connecting_ = false;
+            connectEndTime_ = millis();
+            break;
+            
+        default:
+            ESP_LOGI(TAG, "WiFi event: %d", event);
+            break;
+    }
+}
+
+void NetworkControl::setCACertBundle(WiFiClientSecure& client) {
+    client.setCACertBundle(certs_x509_crt_bundle_start, certs_x509_crt_bundle_end - certs_x509_crt_bundle_start);
 }
 
 } // namespace dict

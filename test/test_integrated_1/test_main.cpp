@@ -1,19 +1,20 @@
 #include <Arduino.h>
 #include <unity.h>
-#include "drivers_display/display_manager.h"
-#include "ui_status/ui_status.h"
-#include "drivers_blekeyboard/ble_keyboard.h"
-#include "drivers_blekeyboard/key_processor.h"
-#include "drivers_network/network_control.h"
-#include "drivers_audio/audio_manager.h"
-#include "ui/ui.h"
-#include "api_dictionary/dictionary_api.h"
-#include "drivers_display/lvgl_helper.h"
+#include "display_manager.h"
+#include "ui_status.h"
+#include "ble_keyboard.h"
+#include "key_processor.h"
+#include "network_control.h"
+#include "audio_manager.h"
+#include "dictionary_api.h"
+#include "lvgl_helper.h"
 #include "test_wifi_credentials.h"
 #include "screens/main_screen.h"
+#include "ui/ui.h"
 
 using namespace dict;
 
+namespace dict {
 // Global objects for the integrated test
 DisplayManager* g_display = nullptr;
 StatusOverlay* g_status = nullptr;
@@ -21,6 +22,7 @@ BLEKeyboard* g_bleKeyboard = nullptr;
 KeyProcessor* g_keyProcessor = nullptr;
 NetworkControl* g_network = nullptr;
 AudioManager* g_audio = nullptr;
+} // namespace dict
 
 MainScreen* g_mainScreen = nullptr;
 
@@ -29,9 +31,11 @@ bool g_bleConnected = false;
 bool g_wifiConnected = false;
 bool g_audioReady = false;
 
+
 void setup() {
     Serial.begin(115200);
     delay(2000); // Give time for serial to initialize
+    // AudioToolsLogger.begin(Serial, AudioToolsLogLevel::Debug);
     
     ESP_LOGI("INTEGRATED_TEST", "Starting integrated test setup...");
     
@@ -40,6 +44,8 @@ void setup() {
     TEST_ASSERT_TRUE_MESSAGE(g_display->initialize(), "Display manager initialize failed");
     TEST_ASSERT_TRUE(g_display->isReady());
     ESP_LOGI("INTEGRATED_TEST", "Display manager initialized successfully");
+
+    lvglEnableKeyEventHandler();
 
     ui_init();
     g_mainScreen = new MainScreen();
@@ -149,6 +155,7 @@ void loop() {
                     String ssid = WiFi.SSID();
                     g_status->updateWiFiStatus(true, ssid);
                     ESP_LOGI("INTEGRATED_TEST", "WiFi connected to: %s", ssid.c_str());
+                    g_mainScreen->onConnectionReady();
                 } else {
                     g_status->updateWiFiStatus(false);
                     ESP_LOGI("INTEGRATED_TEST", "WiFi disconnected");
@@ -159,6 +166,12 @@ void loop() {
             ESP_LOGI("INTEGRATED_TEST", "When not connected and connect ended more than 10 seconds ago, start connect again");
             g_network->randomizeMACAddress();
             g_network->connectToNetwork(TEST_WIFI_SSID, TEST_WIFI_PASSWORD);
+        } else {
+            static uint32_t lastCheck = 0;
+            while (millis() - lastCheck > 1000) {
+                lastCheck = millis();
+                // ESP_LOGD("INTEGRATED_TEST", "Check why not hit reconnect: %d, %d, %d", wifiConnected, g_network->isConnecting(), millis() - g_network->getConnectEndTime());
+            }
         }
     }
     
@@ -187,7 +200,7 @@ void loop() {
         g_mainScreen->tick();
     }
     
-    delay(50); // Small delay to prevent overwhelming the system
+    delay(10); // Small delay to prevent overwhelming the system
 }
 
 void tearDown() {

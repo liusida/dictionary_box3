@@ -3,6 +3,7 @@
 #include "core_eventing/event_publisher.h"
 #include "core_eventing/events.h"
 #include "audio_source_littlefs_mounted.h"
+#include "audio_source_dynamic_url_no_auto_next.h"
 #include <WiFi.h>
 #include "LittleFS.h"
 #define HELIX_LOG_LEVEL LogLevelHelix::Warning
@@ -36,6 +37,7 @@ public:
     bool isCurrentlyPlaying() const; // Check if audio is currently playing
     bool isCurrentlyPaused() const; // Check if audio is paused
     String getCurrentUrl() const { return currentUrl; } // Get current audio URL/file path
+    float getVolume() const { return volume_; } // Get current audio volume
     void setVolume(float volume); // Set audio volume (0.0 to 1.0)
 
 private:
@@ -49,7 +51,7 @@ private:
     MP3DecoderHelix decoder;
     
     // Audio sources (created dynamically based on URL/file)
-    AudioSourceURL* urlSource;
+    AudioSourceDynamicURLNoAutoNext* urlSource;
     AudioSourceLittleFSMounted* fileSource;
     URLStream urlStream;
     
@@ -57,6 +59,7 @@ private:
     bool initialized_;
     bool isPlaying;
     String currentUrl;
+    float volume_;
     
     // Private methods
     bool isUrl(const char* path) const; // Check if path is a URL

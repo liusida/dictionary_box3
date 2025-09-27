@@ -1,5 +1,7 @@
 #pragma once
 #include "common.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 namespace dict {
 
@@ -51,6 +53,7 @@ public:
     // Main functionality methods
     DictionaryResult lookupWord(const String& word); // Look up a word in the dictionary
     AudioUrl getAudioUrl(const String& word, const String& audioType); // Get audio URL for a word
+    void prewarm(); // Prewarm the API client
     
     // Configuration methods
     void setBaseUrl(const String& url); // Set the base URL for the dictionary API
@@ -64,9 +67,16 @@ public:
     
 private:
     // Configuration
+    String hostname_;
     String baseUrl_;
     String audioBaseUrl_;
     bool initialized_;
+    
+    // Async prewarm task
+    TaskHandle_t prewarmTaskHandle_;
+    
+    // Static task function for async prewarm
+    static void prewarmTask(void* parameter);
 };
 
 } // namespace dict
