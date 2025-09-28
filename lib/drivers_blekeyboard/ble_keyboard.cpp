@@ -23,9 +23,17 @@ class BLEKeyboard::ScanCallbacks : public NimBLEScanCallbacks {
     BLEKeyboard *keyboard;
     ScanCallbacks(BLEKeyboard *kb) : keyboard(kb) {}
     void onResult(const NimBLEAdvertisedDevice *advertisedDevice) override {
-        bool found = false;
         String deviceName = advertisedDevice->getName().c_str();
         String deviceAddr = advertisedDevice->getAddress().toString().c_str();
+        bool hasService = false;
+        try {
+            hasService = advertisedDevice->isAdvertisingService(NimBLEUUID(BLE_SERVICE_UUID));
+        } catch (...) {
+            ESP_LOGW(TAG, "Service check failed for: %s", deviceAddr.c_str());
+            hasService = false;
+        }
+
+        bool found = false;
         if (deviceName.length() > 0) {
             ESP_LOGD(TAG, "Found Device: %s (%s)", deviceName.c_str(), deviceAddr.c_str());
             keyboard->discoveredDevices.push_back(std::make_pair(deviceName, deviceAddr));
@@ -36,7 +44,7 @@ class BLEKeyboard::ScanCallbacks : public NimBLEScanCallbacks {
         if (keyboard->preferences.getString("addr").equals(deviceAddr)) {
             found = true;
         }
-        if (advertisedDevice->isAdvertisingService(NimBLEUUID(BLE_SERVICE_UUID))) {
+        if (hasService) {
             found = true;
         }
         if (found) {

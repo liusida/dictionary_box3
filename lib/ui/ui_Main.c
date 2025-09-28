@@ -10,7 +10,7 @@ lv_obj_t * ui_TxtWord = NULL;
 lv_obj_t * ui_InputWord = NULL;
 lv_obj_t * ui_Panel1 = NULL;
 lv_obj_t * ui_TxtExplanation = NULL;
-lv_obj_t * ui_Panel2 = NULL;
+lv_obj_t * ui_Line = NULL;
 lv_obj_t * ui_TxtSampleSentence = NULL;
 lv_obj_t * ui_LookingUpBar = NULL;
 lv_obj_t * ui_IcoStatus = NULL;
@@ -75,11 +75,11 @@ void ui_Main_screen_init(void)
     lv_obj_set_style_pad_top(ui_TxtExplanation, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(ui_TxtExplanation, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Panel2 = lv_obj_create(ui_Panel1);
-    lv_obj_set_height(ui_Panel2, 1);
-    lv_obj_set_width(ui_Panel2, lv_pct(100));
-    lv_obj_set_align(ui_Panel2, LV_ALIGN_CENTER);
-    lv_obj_remove_flag(ui_Panel2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    ui_Line = lv_obj_create(ui_Panel1);
+    lv_obj_set_height(ui_Line, 1);
+    lv_obj_set_width(ui_Line, lv_pct(100));
+    lv_obj_set_align(ui_Line, LV_ALIGN_CENTER);
+    lv_obj_remove_flag(ui_Line, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
     ui_TxtSampleSentence = lv_label_create(ui_Panel1);
     lv_obj_set_width(ui_TxtSampleSentence, lv_pct(100));
@@ -139,7 +139,7 @@ void ui_Main_screen_destroy(void)
     ui_InputWord = NULL;
     ui_Panel1 = NULL;
     ui_TxtExplanation = NULL;
-    ui_Panel2 = NULL;
+    ui_Line = NULL;
     ui_TxtSampleSentence = NULL;
     ui_LookingUpBar = NULL;
     ui_IcoStatus = NULL;

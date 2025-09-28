@@ -1,6 +1,7 @@
 #pragma once
 #include "api_dictionary/dictionary_api.h"
 #include "core_eventing/events.h"
+#include "wifi_settings_screen.h"
 
 namespace dict {
 
@@ -25,15 +26,18 @@ public:
     void onFunctionKeyEvent(const FunctionKeyEvent& event);
     void onConnectionReady();
     void onWifiSettings();
+    void onBackFromWifiSettings();
     void onPlayAudio(const String& audioType);
     
 private:
     bool initialized_;
     bool visible_;
+    bool isScreenActive_;
     String currentWord_;
     DictionaryApi dictionaryApi_;
     DictionaryResult currentResult_;
     bool isWifiSettings_;
+    WiFiSettingsScreen wifiSettingsScreen_;
 };
 
 } // namespace dict

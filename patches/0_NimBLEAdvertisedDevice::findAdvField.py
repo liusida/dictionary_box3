@@ -12,9 +12,7 @@ from os.path import join, isfile
 import os
 import shutil
 
-Import("env")
-
-project_root = env.subst("$PROJECT_DIR")
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 src_file = join(project_root, ".pio", "libdeps", "dictionary", "NimBLE-Arduino", "src", "NimBLEAdvertisedDevice.cpp")
 backup_file = src_file + ".bak"
 patched_file = join(project_root, "patches", "new_files", "NimBLEAdvertisedDevice.cpp")

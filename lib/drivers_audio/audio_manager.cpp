@@ -97,12 +97,14 @@ void AudioManager::tick() {
             player->copy();
         } else { // timeout detected, clean up
             if (isPlaying) {
+                ESP_LOGI(TAG, "Player timeout detected, stopping and cleaning up");
                 isPlaying = false; // Stop the player before cleaning up
                 player->stop();
                 player->end();
+                delay(10);
+                cleanupSources();
                 delete player;
                 player = nullptr;
-                cleanupSources();
             }
         }
     }

@@ -1,7 +1,7 @@
 #include "main_screen.h"
 #include "drivers_audio/audio_manager.h"
 #include "drivers_display/lvgl_helper.h"
-#include "ui/ui.h"
+#include "ui.h"
 
 namespace dict {
 
@@ -9,177 +9,214 @@ static const char *TAG = "MainScreen";
 
 extern AudioManager *g_audio;
 
-MainScreen::MainScreen() : initialized_(false), visible_(false), isWifiSettings_(false) {}
+MainScreen::MainScreen() : initialized_(false), visible_(false), isWifiSettings_(false), isScreenActive_(false) {}
 
 MainScreen::~MainScreen() { shutdown(); }
 
 bool MainScreen::initialize() {
-    if (initialized_) {
-        return true;
-    }
-
-    dictionaryApi_.initialize();
-
-    initialized_ = true;
+  if (initialized_) {
     return true;
+  }
+
+  dictionaryApi_.initialize();
+
+  initialized_ = true;
+  return true;
 }
 
 void MainScreen::shutdown() {
-    if (!initialized_) {
-        return;
-    }
+  if (!initialized_) {
+    return;
+  }
 
-    dictionaryApi_.shutdown();
+  dictionaryApi_.shutdown();
 
-    initialized_ = false;
-    visible_ = false;
+  initialized_ = false;
+  visible_ = false;
 }
 
 void MainScreen::tick() {
-    if (!initialized_) {
-        return;
-    }
+  if (!initialized_) {
+    return;
+  }
 }
 
 bool MainScreen::isReady() const { return initialized_; }
 
 void MainScreen::show() {
-    if (!initialized_) {
-        return;
-    }
-    isWifiSettings_ = false;
+  if (!initialized_) {
+    return;
+  }
+  isWifiSettings_ = false;
 
-    // Initialize and show the main UI screen
-    lv_disp_load_scr(ui_Main);
-    // Set up UI elements first
-    addObjectToDefaultGroup(ui_InputWord);
-    lv_textarea_set_text(ui_InputWord, "");
-    lv_group_focus_obj(ui_InputWord);
-    lv_obj_remove_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN);
+  // Initialize and show the main UI screen
+  lv_disp_load_scr(ui_Main);
+  // Set up UI elements first
+  addObjectToDefaultGroup(ui_InputWord);
+  lv_textarea_set_text(ui_InputWord, "");
+  lv_group_focus_obj(ui_InputWord);
+  lv_obj_remove_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN);
 
-    lv_obj_add_flag(ui_TxtWord, LV_OBJ_FLAG_HIDDEN);
-    lv_label_set_text(ui_TxtWord, "");
-    lv_label_set_text(ui_TxtExplanation, "");
-    lv_label_set_text(ui_TxtSampleSentence, "");
+  lv_obj_add_flag(ui_TxtWord, LV_OBJ_FLAG_HIDDEN);
+  lv_label_set_text(ui_TxtWord, "");
+  lv_label_set_text(ui_TxtExplanation, "");
+  lv_label_set_text(ui_TxtSampleSentence, "");
 
-    // Install LVGL key event handler when screen becomes active
-    lvglSetKeyCallbacks(
-        [this]() {
-            // Submit callback - called when Enter is pressed
-            ESP_LOGI(TAG, "Submit pressed");
-            onSubmit();
-        },
-        [this](char key) {
-            // Key input callback - called for each character
-            ESP_LOGD(TAG, "Key input: %c", key);
-            onKeyIn(key);
-        });
-    lvglSetFunctionKeyCallbacks([this](const FunctionKeyEvent &event) {
-        // Function key input callback - called for each function key
-        ESP_LOGD(TAG, "Function key input: %d", event.type);
-        onFunctionKeyEvent(event);
-    });
-    ESP_LOGI(TAG, "LVGL key event handler installed for MainScreen");
+  // Install LVGL key event handler when screen becomes active
+  lvglSetKeyCallbacks(
+      [this]() {
+        // Submit callback - called when Enter is pressed
+        ESP_LOGI(TAG, "Submit pressed");
+        onSubmit();
+      },
+      [this](char key) {
+        // Key input callback - called for each character
+        ESP_LOGD(TAG, "Key input: %c", key);
+        onKeyIn(key);
+      });
+  lvglSetFunctionKeyCallbacks([this](const FunctionKeyEvent &event) {
+    // Function key input callback - called for each function key
+    ESP_LOGD(TAG, "Function key input: %d", event.type);
+    onFunctionKeyEvent(event);
+  });
+  ESP_LOGI(TAG, "LVGL key event handler installed for MainScreen");
 
-    visible_ = true;
+  visible_ = true;
+  isScreenActive_ = true;
 }
 
 void MainScreen::hide() {
-    if (!initialized_) {
-        return;
-    }
+  if (!initialized_) {
+    return;
+  }
 
-    // Remove LVGL key event handler when screen is hidden
-    lvglSetKeyCallbacks(nullptr, nullptr);
-    lvglSetFunctionKeyCallbacks(nullptr);
-    ESP_LOGI(TAG, "LVGL key event handler removed from MainScreen");
+  // Remove LVGL key event handler when screen is hidden
+  lvglSetKeyCallbacks(nullptr, nullptr);
+  lvglSetFunctionKeyCallbacks(nullptr);
+  ESP_LOGI(TAG, "LVGL key event handler removed from MainScreen");
 
-    visible_ = false;
+  visible_ = false;
+  isScreenActive_ = false;
 }
 
 bool MainScreen::isVisible() const { return visible_; }
 
 void MainScreen::onSubmit() {
-    currentWord_ = lv_textarea_get_text(ui_InputWord);
-    if (currentWord_.length() == 0) {
-        return;
-    }
-    ESP_LOGI(TAG, "Submit action triggered");
-    lv_textarea_set_text(ui_InputWord, "");
-    lv_label_set_text(ui_TxtWord, currentWord_.c_str());
-    lv_obj_add_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_remove_flag(ui_TxtWord, LV_OBJ_FLAG_HIDDEN);
-    currentResult_ = dictionaryApi_.lookupWord(currentWord_);
-    if (currentResult_.success) {
-        currentWord_ = currentResult_.word;
-        lv_label_set_text(ui_TxtWord, currentResult_.word.c_str());
-        lv_label_set_text(ui_TxtExplanation, currentResult_.explanation.c_str());
-        lv_label_set_text(ui_TxtSampleSentence, currentResult_.sampleSentence.c_str());
-    } else {
-        lv_label_set_text(ui_TxtExplanation, "Request failed!");
-    }
+  if (!isScreenActive_ && isWifiSettings_) {
+    wifiSettingsScreen_.onSubmit();
+    return;
+  }
+  currentWord_ = lv_textarea_get_text(ui_InputWord);
+  currentWord_.replace("\b", ""); // Remove backspace
+  currentWord_.replace("\0", ""); // Remove null
+  currentWord_.replace("\r", ""); // Remove carriage return
+  currentWord_.replace("\n", ""); // Remove newline
+  currentWord_.trim();
+  if (currentWord_.isEmpty() || currentWord_.length() == 0) {
+    lv_label_set_text(ui_TxtExplanation, "Please enter a word to start.");
+    lv_obj_add_flag(ui_Line, LV_OBJ_FLAG_HIDDEN);
+    return;
+  }
+
+  ESP_LOGI(TAG, "Submit action triggered");
+  lv_textarea_set_text(ui_InputWord, "");
+  lv_label_set_text(ui_TxtWord, currentWord_.c_str());
+  lv_obj_add_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_remove_flag(ui_TxtWord, LV_OBJ_FLAG_HIDDEN);
+  currentResult_ = dictionaryApi_.lookupWord(currentWord_);
+  if (currentResult_.success) {
+    g_audio->stop();
+    currentWord_ = currentResult_.word;
+    lv_obj_remove_flag(ui_Line, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(ui_TxtWord, currentResult_.word.c_str());
+    lv_label_set_text(ui_TxtExplanation, currentResult_.explanation.c_str());
+    lv_label_set_text(ui_TxtSampleSentence, currentResult_.sampleSentence.c_str());
+  } else {
+    lv_label_set_text(ui_TxtExplanation, "Request failed. Please try again.");
+    lv_obj_add_flag(ui_Line, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(ui_TxtWord, LV_OBJ_FLAG_HIDDEN);
+    lv_group_focus_obj(ui_InputWord);
+    lv_textarea_set_text(ui_InputWord, currentWord_.c_str());
+  }
 }
 
 void MainScreen::onKeyIn(char key) {
-    ESP_LOGD(TAG, "Key in: %c", key);
-    if (lv_obj_has_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN)) {
-        lv_obj_remove_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(ui_TxtWord, LV_OBJ_FLAG_HIDDEN);
-        lv_group_focus_obj(ui_InputWord);
-        const char str[2] = {key, '\0'};
-        lv_textarea_set_text(ui_InputWord, str);
-    }
-    // Most of the keyins are handled by handleKeyEvent to LVGL's default group
+  if (!isScreenActive_) {
+    return;
+  }
+  ESP_LOGD(TAG, "Key in: %c", key);
+  if (lv_obj_has_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN)) {
+    lv_obj_remove_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(ui_TxtWord, LV_OBJ_FLAG_HIDDEN);
+    lv_group_focus_obj(ui_InputWord);
+    const char str[2] = {key, '\0'};
+    lv_textarea_set_text(ui_InputWord, str);
+  }
+  // Most of the keyins are handled by handleKeyEvent to LVGL's default group
 }
 
 void MainScreen::onFunctionKeyEvent(const FunctionKeyEvent &event) {
-    ESP_LOGD(TAG, "Function key input: %d", event.type);
-    switch (event.type) {
-    case FunctionKeyEvent::ReadWord:
-        onPlayAudio("word");
-        break;
-    case FunctionKeyEvent::ReadExplanation:
-        onPlayAudio("explanation");
-        break;
-    case FunctionKeyEvent::ReadSampleSentence:
-        onPlayAudio("sample");
-        break;
-    case FunctionKeyEvent::WifiSettings:
-        onWifiSettings();
-        break;
-    default:
-        break;
-    }
+  ESP_LOGD(TAG, "Function key input: %d", event.type);
+  switch (event.type) {
+  case FunctionKeyEvent::ReadWord:
+    onPlayAudio("word");
+    break;
+  case FunctionKeyEvent::ReadExplanation:
+    onPlayAudio("explanation");
+    break;
+  case FunctionKeyEvent::ReadSampleSentence:
+    onPlayAudio("sample");
+    break;
+  case FunctionKeyEvent::WifiSettings:
+    onWifiSettings();
+    break;
+  default:
+    break;
+  }
 }
 
-void MainScreen::onPlayAudio(const String& audioType) {
-    if (currentWord_.length() == 0) {
-        return;
-    }
-    AudioUrl audioUrl = dictionaryApi_.getAudioUrl(currentWord_, audioType);
-    ESP_LOGI(TAG, "Playing audio: %s", audioUrl.url.c_str());
-    if (g_audio) {
-        g_audio->play(audioUrl.url.c_str());
-    }
+void MainScreen::onPlayAudio(const String &audioType) {
+  if (!isScreenActive_) {
+    return;
+  }
+  if (currentWord_.length() == 0) {
+    return;
+  }
+  AudioUrl audioUrl = dictionaryApi_.getAudioUrl(currentWord_, audioType);
+  ESP_LOGI(TAG, "Playing audio: %s", audioUrl.url.c_str());
+  if (g_audio) {
+    g_audio->play(audioUrl.url.c_str());
+  }
 }
 
 void MainScreen::onConnectionReady() {
-    if (dictionaryApi_.isReady()) {
-        dictionaryApi_.prewarm();
-    }
+  if (dictionaryApi_.isReady()) {
+    dictionaryApi_.prewarm();
+  }
 }
 
 void MainScreen::onWifiSettings() {
-    ESP_LOGI(TAG, "Wifi settings");
-    if (!isWifiSettings_) {
-        ui_WIFI_Settings_screen_init();
-        lv_disp_load_scr(ui_WIFI_Settings);
-        isWifiSettings_ = true;
-    } else {
-        lv_disp_load_scr(ui_Main);  // Switch back to main screen
-        ui_WIFI_Settings_screen_destroy();  // Destroy the WiFi settings screen
-        isWifiSettings_ = false;
-    }
+  ESP_LOGI(TAG, "Wifi settings");
+  if (!isWifiSettings_) {
+    wifiSettingsScreen_.initialize();
+    wifiSettingsScreen_.setParent(this);
+    wifiSettingsScreen_.scan();
+    isWifiSettings_ = true;
+    isScreenActive_ = false;
+  } else {
+    onBackFromWifiSettings();
+  }
 }
 
+void MainScreen::onBackFromWifiSettings() {
+  ESP_LOGI(TAG, "Back from wifi settings");
+  if (isWifiSettings_) {
+    wifiSettingsScreen_.shutdown();
+    lv_disp_load_scr(ui_Main); // Switch back to main screen
+    lv_group_focus_obj(ui_InputWord);
+    isWifiSettings_ = false;
+    isScreenActive_ = true;
+  }
+}
 } // namespace dict

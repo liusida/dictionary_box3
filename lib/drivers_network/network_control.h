@@ -29,7 +29,10 @@ public:
     bool isConnected(); // Check if WiFi is currently connected
     wl_status_t getStatus(); // Get current WiFi connection status
     IPAddress getIP(); // Get current IP address
+    bool connectWithTryingCredentials();
+    bool connectWithSavedCredentials();
     bool connectToNetwork(const String& ssid, const String& password); // Connect to specific network
+    void disconnect();
     WiFiClientSecure& getClient() { return client; } // Get the HTTPS client
     void randomizeMACAddress(); // Randomize WiFi MAC address for privacy
     void setCACertBundle(WiFiClientSecure& client);
@@ -39,18 +42,25 @@ public:
     bool loadCredentials(String& ssid, String& password); // Load saved credentials from NVS
     void clearCredentials(); // Clear saved credentials from NVS
     bool hasSavedCredentials() const; // Check if valid credentials exist in NVS
+    String getCurrentSsid() const { return currentSsid_; }
+    String getCurrentPassword() const { return currentPassword_; }
     
     // Network scanning methods
     std::vector<String> scanNetworks(); // Scan for available WiFi networks
+    bool isScanning() const { return scanning_; }
 
     // Connection callbacks
     using ConnectedCallback = std::function<void(const IPAddress&)>;
     using ConnectionFailedCallback = std::function<void()>;
     void setOnConnected(const ConnectedCallback& cb) { onConnected_ = cb; } // Set callback for successful connection
     void setOnConnectionFailed(const ConnectionFailedCallback& cb) { onConnectionFailed_ = cb; } // Set callback for connection failure
+    void setTryingCredentials(const String& ssid, const String& password);
     
     // Event callbacks
     void onWiFiEvent(arduino_event_id_t event, arduino_event_info_t info);
+
+    void setIsOnSettingScreen(bool isOnSettingScreen) { isOnSettingScreen_ = isOnSettingScreen; }
+    bool isOnSettingScreen() const { return isOnSettingScreen_; }
 
 private:
     Preferences preferences;
@@ -58,22 +68,26 @@ private:
     bool connecting_;
     uint32_t connectStartTime_;
     uint32_t connectEndTime_;
-
+    bool scanning_;
     bool wifiConnected;
     unsigned long lastConnectionCheck;
     unsigned long lastDisconnectionTime;
     bool wasConnected;
     // Pending credentials to persist on successful connection
+    String tryingSsid_;
+    String tryingPassword_;
     String pendingSsid_;
     String pendingPassword_;
+    String currentSsid_;
+    String currentPassword_;
+
     // Callbacks
     ConnectedCallback onConnected_{};
     ConnectionFailedCallback onConnectionFailed_{};
     NetworkClientSecure client;
     HTTPClient https;
 
-    // Try to connect using saved credentials
-    bool connectWithSavedCredentials();
+    bool isOnSettingScreen_;
 };
 
 } // namespace dict

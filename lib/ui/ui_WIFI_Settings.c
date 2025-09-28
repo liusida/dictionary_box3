@@ -70,6 +70,8 @@ void ui_WIFI_Settings_screen_init(void)
     lv_obj_set_y(ui_InputSSIDs, 15);
     lv_obj_add_flag(ui_InputSSIDs, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
     lv_obj_set_style_text_font(ui_InputSSIDs, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_InputSSIDs, lv_color_hex(0xC3C3C3), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_InputSSIDs, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_set_style_text_font(lv_dropdown_get_list(ui_InputSSIDs), &lv_font_montserrat_14,
                                LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -89,6 +91,7 @@ void ui_WIFI_Settings_screen_init(void)
     lv_obj_set_y(ui_InputPassword, 82);
     lv_textarea_set_placeholder_text(ui_InputPassword, "Placeholder...");
     lv_textarea_set_one_line(ui_InputPassword, true);
+    lv_textarea_set_password_mode(ui_InputPassword, true);
     lv_obj_set_style_text_font(ui_InputPassword, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 }

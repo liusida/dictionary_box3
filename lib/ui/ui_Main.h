@@ -18,7 +18,7 @@ extern lv_obj_t * ui_TxtWord;
 extern lv_obj_t * ui_InputWord;
 extern lv_obj_t * ui_Panel1;
 extern lv_obj_t * ui_TxtExplanation;
-extern lv_obj_t * ui_Panel2;
+extern lv_obj_t * ui_Line;
 extern lv_obj_t * ui_TxtSampleSentence;
 extern lv_obj_t * ui_LookingUpBar;
 extern lv_obj_t * ui_IcoStatus;
