@@ -44,7 +44,7 @@ public:
      * @brief Process all queued events (call from main loop)
      */
     void processEvents() {
-        std::queue<T, std::deque<T, PsramAllocator<T>>> eventsToProcess;
+        std::queue<T, std::deque<T>> eventsToProcess;
         
         // Move events from queue to local queue (minimize lock time)
         {
@@ -82,8 +82,8 @@ public:
     }
     
 private:
-    std::vector<Listener, PsramAllocator<Listener>> listeners_;
-    std::queue<T, std::deque<T, PsramAllocator<T>>> eventQueue_;
+    std::vector<Listener> listeners_;
+    std::queue<T, std::deque<T>> eventQueue_;
     std::mutex eventQueueMutex_;
 };
 

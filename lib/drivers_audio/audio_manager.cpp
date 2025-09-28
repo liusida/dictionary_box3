@@ -97,7 +97,11 @@ void AudioManager::tick() {
     }
     if (player && player->getStream()) {
         if (player->isActive()) {
-            player->copy();
+            try {
+                player->copy();
+            } catch (...) {
+                ESP_LOGE(TAG, "player->copy() failed, ignoring.");
+            }
         } else { // timeout detected, clean up
             if (isPlaying) {
                 ESP_LOGI(TAG, "Player timeout detected, stopping and cleaning up");
@@ -126,6 +130,8 @@ bool AudioManager::play(const char *url) {
     
     if (player) {
         player->stop();
+        decoder.clearNotifyAudioChange();
+        
         player->end();
         decoder.end();
         delete player;
