@@ -4,6 +4,18 @@
 
 namespace dict {
 
+enum class WiFiState {
+    None,
+    Ready,
+    Working
+};
+
+enum class AudioState {
+    None,
+    Ready,
+    Working
+};
+
 class StatusOverlay {
 public:
     // Constructor/Destructor
@@ -24,9 +36,9 @@ public:
     bool isVisible() const; // Check if overlay is currently visible
 
     // Status update methods
-    void updateWiFiStatus(bool connected, const String& ssid = ""); // Update WiFi connection status
+    void updateWiFiStatus(WiFiState state, const String& ssid = ""); // Update WiFi connection status
     void updateBLEStatus(bool connected, const String& device = ""); // Update BLE keyboard status
-    void updateAudioStatus(bool playing, const String& track = ""); // Update audio playback status
+    void updateAudioStatus(AudioState state, const String& track = ""); // Update audio playback status
 
     // Configuration methods
     void setPosition(lv_align_t align, int32_t x, int32_t y); // Set overlay position on screen
@@ -59,9 +71,9 @@ private:
     uint16_t animationDuration_;
     
     // Status states
-    bool wifiConnected_;
+    WiFiState wifiState_;
     bool bleConnected_;
-    bool audioPlaying_;
+    AudioState audioState_;
     String wifiSSID_;
     String bleDevice_;
     String audioTrack_;

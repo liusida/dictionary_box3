@@ -16,7 +16,7 @@ extern void ui_Main_screen_destroy(void);
 extern lv_obj_t * ui_Main;
 extern lv_obj_t * ui_TxtWord;
 extern lv_obj_t * ui_InputWord;
-extern lv_obj_t * ui_Panel1;
+extern lv_obj_t * ui_Result;
 extern lv_obj_t * ui_TxtExplanation;
 extern lv_obj_t * ui_Line;
 extern lv_obj_t * ui_TxtSampleSentence;

@@ -22,6 +22,7 @@ extern lv_obj_t * ui_TxtWIFI;
 extern lv_obj_t * ui_InputSSIDs;
 extern lv_obj_t * ui_TxtPassword;
 extern lv_obj_t * ui_InputPassword;
+extern lv_obj_t * ui_TxtStatus;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

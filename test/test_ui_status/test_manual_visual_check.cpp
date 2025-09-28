@@ -164,9 +164,9 @@ void test_status_overlay_manual_visual_check(void) {
 
     // Update status to make indicators visible with different colors
     ESP_LOGI("TEST", "Updating status indicators...");
-    status.updateWiFiStatus(true, "TestWiFi");
+    status.updateWiFiStatus(WiFiState::Working, "TestWiFi");
     status.updateBLEStatus(true, "NoKeyboard");
-    status.updateAudioStatus(true, "TestSong.mp3");
+    status.updateAudioStatus(AudioState::Working, "TestSong.mp3");
     status.setWiFiBlinking(true);
     // Process LVGL tasks to ensure everything is rendered
     ESP_LOGI("TEST", "Processing LVGL tasks...");

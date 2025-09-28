@@ -28,6 +28,8 @@ public:
     void onWifiSettings();
     void onBackFromWifiSettings();
     void onPlayAudio(const String& audioType);
+    void onDownArrow();
+    void onUpArrow();
     
 private:
     bool initialized_;

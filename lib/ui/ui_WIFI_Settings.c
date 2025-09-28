@@ -14,6 +14,7 @@ lv_obj_t * ui_TxtWIFI = NULL;
 lv_obj_t * ui_InputSSIDs = NULL;
 lv_obj_t * ui_TxtPassword = NULL;
 lv_obj_t * ui_InputPassword = NULL;
+lv_obj_t * ui_TxtStatus = NULL;
 // event funtions
 
 // build funtions
@@ -50,7 +51,7 @@ void ui_WIFI_Settings_screen_init(void)
     lv_obj_set_width(ui_Container1, LV_SIZE_CONTENT);   /// 100
     lv_obj_set_height(ui_Container1, LV_SIZE_CONTENT);    /// 50
     lv_obj_set_x(ui_Container1, 0);
-    lv_obj_set_y(ui_Container1, 10);
+    lv_obj_set_y(ui_Container1, 20);
     lv_obj_set_align(ui_Container1, LV_ALIGN_TOP_MID);
     lv_obj_remove_flag(ui_Container1, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
@@ -94,6 +95,14 @@ void ui_WIFI_Settings_screen_init(void)
     lv_textarea_set_password_mode(ui_InputPassword, true);
     lv_obj_set_style_text_font(ui_InputPassword, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_TxtStatus = lv_label_create(ui_WIFI_Settings);
+    lv_obj_set_width(ui_TxtStatus, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_TxtStatus, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_TxtStatus, 0);
+    lv_obj_set_y(ui_TxtStatus, 15);
+    lv_obj_set_align(ui_TxtStatus, LV_ALIGN_TOP_MID);
+    lv_label_set_text(ui_TxtStatus, "");
+
 }
 
 void ui_WIFI_Settings_screen_destroy(void)
@@ -110,5 +119,6 @@ void ui_WIFI_Settings_screen_destroy(void)
     ui_InputSSIDs = NULL;
     ui_TxtPassword = NULL;
     ui_InputPassword = NULL;
+    ui_TxtStatus = NULL;
 
 }

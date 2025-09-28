@@ -111,7 +111,11 @@ struct FunctionKeyEvent {
         PrintMemoryStatus,
         ReadWord,
         ReadExplanation,
-        ReadSampleSentence
+        ReadSampleSentence,
+        DownArrow,
+        UpArrow,
+        LeftArrow,
+        RightArrow
     };
     Type type;
     

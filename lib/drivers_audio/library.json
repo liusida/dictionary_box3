@@ -10,6 +10,8 @@
   "frameworks": ["arduino"],
   "platforms": ["espressif32"],
   "dependencies": [
-    { "name": "core_eventing", "version": ">=0.1.0" }
+    { "name": "core_eventing", "version": ">=0.1.0" },
+    { "name": "drivers_network", "version": ">=0.1.0" },
+    { "name": "ui_status", "version": ">=0.1.0" }
   ]
 }

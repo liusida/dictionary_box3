@@ -63,6 +63,7 @@ void WiFiSettingsScreen::scanTask(void *parameter) {
   lv_dropdown_set_options(ui_InputSSIDs, options.c_str());
   // Set dropdown background color to white
   lv_obj_set_style_bg_color(ui_InputSSIDs, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_label_set_text(ui_TxtStatus, "");
 
   // Clean up
   screen->scanning_ = false;
@@ -83,7 +84,8 @@ void WiFiSettingsScreen::scan() {
   }
   scanning_ = true;
   if (g_network->isConnected()) {
-    String options = g_network->getCurrentSsid() + "\nScanning...";
+    lv_label_set_text(ui_TxtStatus, "Scanning WiFi...");
+    String options = g_network->getCurrentSsid();
     // Set dropdown background color to gray
     lv_obj_set_style_bg_color(ui_InputSSIDs, lv_color_hex(0xC3C3C3), LV_PART_MAIN | LV_STATE_DEFAULT);    
     lv_dropdown_set_options(ui_InputSSIDs, options.c_str());
@@ -91,7 +93,9 @@ void WiFiSettingsScreen::scan() {
     lv_textarea_set_text(ui_InputPassword, g_network->getCurrentPassword().c_str());
     lv_textarea_set_password_mode(ui_InputPassword, true);
   } else {
-    lv_dropdown_set_options(ui_InputSSIDs, "Scanning...");
+    lv_dropdown_set_options(ui_InputSSIDs, "");
+    lv_obj_set_style_bg_color(ui_InputSSIDs, lv_color_hex(0xC3C3C3), LV_PART_MAIN | LV_STATE_DEFAULT);    
+    lv_label_set_text(ui_TxtStatus, "Scanning WiFi...");
   }
 
   // Create task for scanning

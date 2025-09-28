@@ -3,12 +3,14 @@
 #include "core_misc/log.h"
 #include "drivers_i2c/i2c_manager.h"
 #include "network_control.h"
+#include "ui_status.h"
 
 namespace dict {
 
 static const char *TAG = "AudioManager";
 
 extern NetworkControl *g_network;
+extern StatusOverlay *g_status;
 
 AudioManager::AudioManager()
     : board(AudioDriverES8311, NoPins), out(board), info(32000, 2, 16), player(nullptr), decoder(), urlSource(nullptr), fileSource(nullptr),
@@ -72,6 +74,7 @@ void AudioManager::shutdown() {
     // Clean up player
     if (player) {
         player->stop();
+        g_status->updateAudioStatus(AudioState::None);
         player->end();
         delete player;
         player = nullptr;
@@ -100,6 +103,7 @@ void AudioManager::tick() {
                 ESP_LOGI(TAG, "Player timeout detected, stopping and cleaning up");
                 isPlaying = false; // Stop the player before cleaning up
                 player->stop();
+                g_status->updateAudioStatus(AudioState::Ready);
                 player->end();
                 delay(10);
                 cleanupSources();
@@ -163,6 +167,7 @@ bool AudioManager::play(const char *url) {
     //  [ 43842][I][audio_manager.cpp:266] staticMetadataCallback(): [AudioManager] Metadata [Other]: Drum Solo
 
     // Start playback
+    g_status->updateAudioStatus(AudioState::Working, "mp3");
     if (player->begin()) {
         currentUrl = String(url);
         isPlaying = true;
@@ -187,6 +192,7 @@ bool AudioManager::stop() {
         ESP_LOGI(TAG, "Stopping playback");
 
         player->stop();
+        g_status->updateAudioStatus(AudioState::Ready);
         isPlaying = false;
 
         // Publish audio event
@@ -224,7 +230,6 @@ bool AudioManager::isUrl(const char *path) const { return strstr(path, "http://"
 void AudioManager::createUrlSource(const char *url) {
     ESP_LOGI(TAG, "Creating URL source for: %s", url);
 
-    WiFiClientSecure client;
     client.setInsecure();
     urlStream.setClient(client);
 

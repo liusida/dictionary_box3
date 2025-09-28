@@ -8,7 +8,7 @@ static const char* TAG = "StatusOverlay";
 StatusOverlay::StatusOverlay()
     : container_(nullptr), wifiIndicator_(nullptr), bleIndicator_(nullptr), audioIndicator_(nullptr),
       attachedScreen_(nullptr), initialized_(false), visible_(false), indicatorSize_(10),
-      animationDuration_(300), wifiConnected_(false), bleConnected_(false), audioPlaying_(false),
+      animationDuration_(300), wifiState_(WiFiState::None), bleConnected_(false), audioState_(AudioState::None),
       wifiColor_(lv_color_hex(0x0ABF0F)), bleColor_(lv_color_hex(0x4098F2)), audioColor_(lv_color_hex(0xCE45DC)),
       wifiBlinking_(false), bleBlinking_(false), audioBlinking_(false), blinkInterval_(200), 
       lastBlinkTime_(0), blinkState_(true) {
@@ -167,13 +167,15 @@ bool StatusOverlay::isVisible() const {
     return visible_;
 }
 
-void StatusOverlay::updateWiFiStatus(bool connected, const String& ssid) {
-    wifiConnected_ = connected;
+void StatusOverlay::updateWiFiStatus(WiFiState state, const String& ssid) {
+    wifiState_ = state;
     wifiSSID_ = ssid;
     
     if (initialized_) {
         updateWiFiIndicator();
-        ESP_LOGI(TAG, "WiFi status updated: %s (%s)", connected ? "connected" : "disconnected", ssid.c_str());
+        const char* stateStr = (state == WiFiState::None) ? "none" : 
+                              (state == WiFiState::Ready) ? "ready" : "working";
+        ESP_LOGI(TAG, "WiFi status updated: %s (%s)", stateStr, ssid.c_str());
     }
 }
 
@@ -187,13 +189,15 @@ void StatusOverlay::updateBLEStatus(bool connected, const String& device) {
     }
 }
 
-void StatusOverlay::updateAudioStatus(bool playing, const String& track) {
-    audioPlaying_ = playing;
+void StatusOverlay::updateAudioStatus(AudioState state, const String& track) {
+    audioState_ = state;
     audioTrack_ = track;
     
     if (initialized_) {
         updateAudioIndicator();
-        ESP_LOGI(TAG, "Audio status updated: %s (%s)", playing ? "playing" : "stopped", track.c_str());
+        const char* stateStr = (state == AudioState::None) ? "none" : 
+                              (state == AudioState::Ready) ? "ready" : "working";
+        ESP_LOGI(TAG, "Audio status updated: %s (%s)", stateStr, track.c_str());
     }
 }
 
@@ -313,7 +317,25 @@ void StatusOverlay::createIndicators() {
 void StatusOverlay::updateWiFiIndicator() {
     if (!wifiIndicator_) return;
     
-    applyIndicatorStyle(wifiIndicator_, wifiConnected_, wifiColor_, wifiBlinking_);
+    lv_color_t color;
+    bool isActive = true;
+    
+    switch (wifiState_) {
+        case WiFiState::None:
+            color = lv_color_hex(0x333333); // Grey
+            isActive = false;
+            break;
+        case WiFiState::Ready:
+            color = wifiColor_; // Green (0x0ABF0F)
+            isActive = true;
+            break;
+        case WiFiState::Working:
+            color = lv_color_hex(0x00FF00); // Bright green
+            isActive = true;
+            break;
+    }
+    
+    applyIndicatorStyle(wifiIndicator_, isActive, color, wifiBlinking_);
 }
 
 void StatusOverlay::updateBLEIndicator() {
@@ -325,7 +347,25 @@ void StatusOverlay::updateBLEIndicator() {
 void StatusOverlay::updateAudioIndicator() {
     if (!audioIndicator_) return;
     
-    applyIndicatorStyle(audioIndicator_, audioPlaying_, audioColor_, audioBlinking_);
+    lv_color_t color;
+    bool isActive = true;
+    
+    switch (audioState_) {
+        case AudioState::None:
+            color = lv_color_hex(0x333333); // Grey
+            isActive = false;
+            break;
+        case AudioState::Ready:
+            color = audioColor_; // Purple (0xCE45DC)
+            isActive = true;
+            break;
+        case AudioState::Working:
+            color = lv_color_hex(0xFF00FF); // Bright magenta
+            isActive = true;
+            break;
+    }
+    
+    applyIndicatorStyle(audioIndicator_, isActive, color, audioBlinking_);
 }
 
 void StatusOverlay::applyIndicatorStyle(lv_obj_t* indicator, bool active, lv_color_t activeColor, bool blinking) {
@@ -339,7 +379,12 @@ void StatusOverlay::applyIndicatorStyle(lv_obj_t* indicator, bool active, lv_col
         lv_obj_set_style_bg_opa(indicator, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_shadow_opa(indicator, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     }
-    
+
+    // Force immediate UI update for WiFi status changes
+    delay(10);
+    lv_timer_handler();
+    delay(10);
+        
     ESP_LOGI(TAG, "Applied %s color to indicator", active ? "active" : "grey");
 }
 

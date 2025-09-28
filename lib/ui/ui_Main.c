@@ -8,7 +8,7 @@
 lv_obj_t * ui_Main = NULL;
 lv_obj_t * ui_TxtWord = NULL;
 lv_obj_t * ui_InputWord = NULL;
-lv_obj_t * ui_Panel1 = NULL;
+lv_obj_t * ui_Result = NULL;
 lv_obj_t * ui_TxtExplanation = NULL;
 lv_obj_t * ui_Line = NULL;
 lv_obj_t * ui_TxtSampleSentence = NULL;
@@ -51,16 +51,16 @@ void ui_Main_screen_init(void)
     lv_obj_set_style_border_color(ui_InputWord, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_opa(ui_InputWord, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Panel1 = lv_obj_create(ui_Main);
-    lv_obj_set_width(ui_Panel1, 315);
-    lv_obj_set_height(ui_Panel1, 205);
-    lv_obj_set_x(ui_Panel1, 0);
-    lv_obj_set_y(ui_Panel1, 33);
-    lv_obj_set_align(ui_Panel1, LV_ALIGN_TOP_MID);
-    lv_obj_set_flex_flow(ui_Panel1, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(ui_Panel1, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    ui_Result = lv_obj_create(ui_Main);
+    lv_obj_set_width(ui_Result, 315);
+    lv_obj_set_height(ui_Result, 205);
+    lv_obj_set_x(ui_Result, 0);
+    lv_obj_set_y(ui_Result, 33);
+    lv_obj_set_align(ui_Result, LV_ALIGN_TOP_MID);
+    lv_obj_set_flex_flow(ui_Result, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(ui_Result, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
 
-    ui_TxtExplanation = lv_label_create(ui_Panel1);
+    ui_TxtExplanation = lv_label_create(ui_Result);
     lv_obj_set_width(ui_TxtExplanation, lv_pct(100));
     lv_obj_set_height(ui_TxtExplanation, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_TxtExplanation, 65);
@@ -75,13 +75,13 @@ void ui_Main_screen_init(void)
     lv_obj_set_style_pad_top(ui_TxtExplanation, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(ui_TxtExplanation, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Line = lv_obj_create(ui_Panel1);
+    ui_Line = lv_obj_create(ui_Result);
     lv_obj_set_height(ui_Line, 1);
     lv_obj_set_width(ui_Line, lv_pct(100));
     lv_obj_set_align(ui_Line, LV_ALIGN_CENTER);
     lv_obj_remove_flag(ui_Line, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
-    ui_TxtSampleSentence = lv_label_create(ui_Panel1);
+    ui_TxtSampleSentence = lv_label_create(ui_Result);
     lv_obj_set_width(ui_TxtSampleSentence, lv_pct(100));
     lv_obj_set_height(ui_TxtSampleSentence, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_TxtSampleSentence, 5);
@@ -137,7 +137,7 @@ void ui_Main_screen_destroy(void)
     ui_Main = NULL;
     ui_TxtWord = NULL;
     ui_InputWord = NULL;
-    ui_Panel1 = NULL;
+    ui_Result = NULL;
     ui_TxtExplanation = NULL;
     ui_Line = NULL;
     ui_TxtSampleSentence = NULL;

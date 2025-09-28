@@ -103,16 +103,18 @@ void test_status_overlay_status_updates(void) {
     TEST_ASSERT_TRUE(status.isReady());
     
     // Test WiFi status updates
-    status.updateWiFiStatus(false);
-    status.updateWiFiStatus(true, "TestWiFi");
+    status.updateWiFiStatus(WiFiState::None);
+    status.updateWiFiStatus(WiFiState::Ready, "TestWiFi");
+    status.updateWiFiStatus(WiFiState::Working, "TestWiFi");
     
     // Test BLE status updates
     status.updateBLEStatus(false);
     status.updateBLEStatus(true, "TestKeyboard");
     
     // Test Audio status updates
-    status.updateAudioStatus(false);
-    status.updateAudioStatus(true, "test.mp3");
+    status.updateAudioStatus(AudioState::None);
+    status.updateAudioStatus(AudioState::Ready, "test.mp3");
+    status.updateAudioStatus(AudioState::Working, "test.mp3");
     
     // Test tick() doesn't crash
     status.tick();
@@ -194,9 +196,9 @@ void test_status_overlay_integration_with_display(void) {
     status.show();
     
     // Update status indicators
-    status.updateWiFiStatus(true, "TestWiFi");
+    status.updateWiFiStatus(WiFiState::Ready, "TestWiFi");
     status.updateBLEStatus(true, "TestKeyboard");
-    status.updateAudioStatus(false);
+    status.updateAudioStatus(AudioState::Ready);
     
     // Set position
     status.setPosition(LV_ALIGN_TOP_RIGHT, -10, 10);

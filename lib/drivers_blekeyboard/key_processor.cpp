@@ -55,6 +55,10 @@ FunctionKeyEvent::Type KeyProcessor::convertKeyCodeToFunction(uint8_t keyCode) {
         case 59: return FunctionKeyEvent::ReadWord;          // F2  -> ReadWord
         case 60: return FunctionKeyEvent::ReadExplanation;   // F3  -> ReadExplanation
         case 61: return FunctionKeyEvent::ReadSampleSentence; // F4  -> ReadSampleSentence
+        case 81: return FunctionKeyEvent::DownArrow;            // Down Arrow -> DownArrow
+        case 82: return FunctionKeyEvent::UpArrow;            // Up Arrow -> UpArrow
+        case 80: return FunctionKeyEvent::LeftArrow;            // Left Arrow -> LeftArrow
+        case 79: return FunctionKeyEvent::RightArrow;            // Right Arrow -> RightArrow
         default: return FunctionKeyEvent::None;
     }
 }

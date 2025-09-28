@@ -51,9 +51,10 @@ private:
     MP3DecoderHelix decoder;
     
     // Audio sources (created dynamically based on URL/file)
+    WiFiClientSecure client;
+    URLStream urlStream;
     AudioSourceDynamicURLNoAutoNext* urlSource;
     AudioSourceLittleFSMounted* fileSource;
-    URLStream urlStream;
     
     // State management
     bool initialized_;

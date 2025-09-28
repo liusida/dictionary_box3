@@ -79,9 +79,9 @@ void setup() {
     BOOT_MEMORY_ANALYSIS("After status overlay...");
     
     // Initially hide all status icons until services are ready
-    g_status->updateWiFiStatus(false);
+    g_status->updateWiFiStatus(WiFiState::None);
     g_status->updateBLEStatus(false);
-    g_status->updateAudioStatus(false);
+    g_status->updateAudioStatus(AudioState::None);
     ESP_LOGI("INTEGRATED_TEST", "Status icons hidden initially");
     
     // Initialize BLE keyboard
@@ -172,12 +172,12 @@ void loop() {
             if (g_status) {
                 if (wifiConnected) {
                     String ssid = WiFi.SSID();
-                    g_status->updateWiFiStatus(true, ssid);
+                    g_status->updateWiFiStatus(WiFiState::Ready, ssid);
                     ESP_LOGI("INTEGRATED_TEST", "WiFi connected to: %s", ssid.c_str());
                     g_mainScreen->onConnectionReady();
                     BOOT_MEMORY_ANALYSIS("After wifi connected...");
                 } else {
-                    g_status->updateWiFiStatus(false);
+                    g_status->updateWiFiStatus(WiFiState::None);
                     ESP_LOGI("INTEGRATED_TEST", "WiFi disconnected");
                 }
             }
@@ -207,11 +207,11 @@ void loop() {
             g_audioReady = audioReady;
             if (g_status) {
                 if (audioReady) {
-                    g_status->updateAudioStatus(true);
+                    g_status->updateAudioStatus(AudioState::Ready);
                     ESP_LOGI("INTEGRATED_TEST", "Audio system ready");
                     BOOT_MEMORY_ANALYSIS("After audio system ready...");
                 } else {
-                    g_status->updateAudioStatus(false);
+                    g_status->updateAudioStatus(AudioState::None);
                     ESP_LOGI("INTEGRATED_TEST", "Audio system not ready");
                 }
             }

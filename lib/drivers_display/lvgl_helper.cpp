@@ -87,19 +87,35 @@ static void handleFunctionKeyEvent(const FunctionKeyEvent& ev) {
             break;
         case FunctionKeyEvent::WifiSettings:
             ESP_LOGI(TAG, "F12 pressed - wifi settings");
-            if (s_onFunctionKeyIn) s_onFunctionKeyIn(FunctionKeyEvent::WifiSettings);
+            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
             break;
         case FunctionKeyEvent::ReadWord:
             ESP_LOGI(TAG, "F2 pressed - read word");
-            if (s_onFunctionKeyIn) s_onFunctionKeyIn(FunctionKeyEvent::ReadWord);
+            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
             break;
         case FunctionKeyEvent::ReadExplanation:
             ESP_LOGI(TAG, "F3 pressed - read explanation");
-            if (s_onFunctionKeyIn) s_onFunctionKeyIn(FunctionKeyEvent::ReadExplanation);
+            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
             break;
         case FunctionKeyEvent::ReadSampleSentence:
             ESP_LOGI(TAG, "F4 pressed - read sample sentence");
-            if (s_onFunctionKeyIn) s_onFunctionKeyIn(FunctionKeyEvent::ReadSampleSentence);
+            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
+            break;
+        case FunctionKeyEvent::DownArrow:
+            ESP_LOGI(TAG, "Down Arrow pressed");
+            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
+            break;
+        case FunctionKeyEvent::UpArrow:
+            ESP_LOGI(TAG, "Up Arrow pressed");
+            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
+            break;
+        case FunctionKeyEvent::LeftArrow:
+            ESP_LOGI(TAG, "Left Arrow pressed");
+            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
+            break;
+        case FunctionKeyEvent::RightArrow:
+            ESP_LOGI(TAG, "Right Arrow pressed");
+            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
             break;
         default:
             break;
