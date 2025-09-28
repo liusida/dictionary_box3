@@ -75,11 +75,15 @@ static void handleFunctionKeyEvent(const FunctionKeyEvent& ev) {
             break;
         case FunctionKeyEvent::VolumeDown:
             ESP_LOGI(TAG, "F10 pressed - volume down");
-            g_audio->setVolume(g_audio->getVolume() - 0.05);
+            if (g_audio) {
+                g_audio->setVolume(g_audio->getVolume() - 0.05);
+            }
             break;
         case FunctionKeyEvent::VolumeUp:
             ESP_LOGI(TAG, "F11 pressed - volume up");
-            g_audio->setVolume(g_audio->getVolume() + 0.05);
+            if (g_audio) {
+                g_audio->setVolume(g_audio->getVolume() + 0.05);
+            }
             break;
         case FunctionKeyEvent::ReadWord:
             ESP_LOGI(TAG, "F2 pressed - read word");

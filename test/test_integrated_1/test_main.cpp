@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <unity.h>
+#include "lvgl_memory.h"
 #include "display_manager.h"
 #include "ui_status.h"
 #include "ble_keyboard.h"
@@ -11,6 +12,7 @@
 #include "test_wifi_credentials.h"
 #include "screens/main_screen.h"
 #include "ui/ui.h"
+#include "utils.h"
 
 using namespace dict;
 
@@ -36,6 +38,9 @@ void setup() {
     Serial.begin(115200);
     delay(2000); // Give time for serial to initialize
     // AudioToolsLogger.begin(Serial, AudioToolsLogLevel::Debug);
+    ESP_LOGI("MemoryTest", "Start...");
+    printMemoryStatus();
+    //delay(1000);
     
     ESP_LOGI("INTEGRATED_TEST", "Starting integrated test setup...");
     
@@ -45,14 +50,30 @@ void setup() {
     TEST_ASSERT_TRUE(g_display->isReady());
     ESP_LOGI("INTEGRATED_TEST", "Display manager initialized successfully");
 
+    ESP_LOGI("MemoryTest", "After display manager...");
+    printMemoryStatus();
+    //delay(1000);
+
     lvglEnableKeyEventHandler();
 
-    ui_init();
+    ESP_LOGI("MemoryTest", "After lvglEnableKeyEventHandler...");
+    printMemoryStatus();
+    //delay(1000);
+
+    // ui_init();
+    ui_Main_screen_init();
+    ESP_LOGI("MemoryTest", "After ui_init...");
+    printMemoryStatus();
+    //delay(1000);
+
     g_mainScreen = new MainScreen();
     TEST_ASSERT_TRUE_MESSAGE(g_mainScreen->initialize(), "Main screen initialize failed");
     TEST_ASSERT_TRUE(g_mainScreen->isReady());
     g_mainScreen->show();
     ESP_LOGI("INTEGRATED_TEST", "Main UI screen loaded");
+    ESP_LOGI("MemoryTest", "After main screen...");
+    printMemoryStatus();
+    //delay(1000);
     
     // Initialize status overlay and attach to main screen
     g_status = new StatusOverlay();
@@ -63,6 +84,9 @@ void setup() {
     g_status->show();
     g_status->setPosition(LV_ALIGN_TOP_RIGHT, -10, 10);
     ESP_LOGI("INTEGRATED_TEST", "Status overlay initialized and attached");
+    ESP_LOGI("MemoryTest", "After status overlay...");
+    printMemoryStatus();
+    //delay(1000);
     
     // Initially hide all status icons until services are ready
     g_status->updateWiFiStatus(false);
@@ -83,6 +107,9 @@ void setup() {
     
     g_bleKeyboard->begin();
     ESP_LOGI("INTEGRATED_TEST", "BLE keyboard initialized, scanning for devices...");
+    ESP_LOGI("MemoryTest", "After ble keyboard...");
+    printMemoryStatus();
+    //delay(1000);
     
     // Initialize network control
     g_network = new NetworkControl();
@@ -90,12 +117,19 @@ void setup() {
     g_network->begin();
     g_network->connectToNetwork(TEST_WIFI_SSID, TEST_WIFI_PASSWORD);
     ESP_LOGI("INTEGRATED_TEST", "Network control initialized, attempting WiFi connection...");
-    
+    ESP_LOGI("MemoryTest", "After network control...");
+    printMemoryStatus();
+    //delay(1000);
+
+
     // Initialize audio manager
     g_audio = new AudioManager();
     TEST_ASSERT_TRUE_MESSAGE(g_audio->initialize(), "Audio manager initialize failed");
     ESP_LOGI("INTEGRATED_TEST", "Audio manager initialized");
-    
+    ESP_LOGI("MemoryTest", "After audio manager...");
+    printMemoryStatus();
+    // delay(1000);
+
     ESP_LOGI("INTEGRATED_TEST", "Setup completed successfully!");
 }
 
@@ -122,6 +156,9 @@ void loop() {
                 if (bleConnected) {
                     g_status->updateBLEStatus(true, "BLE Keyboard");
                     ESP_LOGI("INTEGRATED_TEST", "BLE keyboard connected!");
+                    ESP_LOGI("MemoryTest", "After ble keyboard connected...");
+                    printMemoryStatus();
+                    //delay(1000);
                 } else {
                     g_status->updateBLEStatus(false);
                     ESP_LOGI("INTEGRATED_TEST", "BLE keyboard disconnected");
@@ -156,6 +193,10 @@ void loop() {
                     g_status->updateWiFiStatus(true, ssid);
                     ESP_LOGI("INTEGRATED_TEST", "WiFi connected to: %s", ssid.c_str());
                     g_mainScreen->onConnectionReady();
+                    ESP_LOGI("MemoryTest", "After wifi connected...");
+                    printMemoryStatus();
+                    //delay(1000);
+                
                 } else {
                     g_status->updateWiFiStatus(false);
                     ESP_LOGI("INTEGRATED_TEST", "WiFi disconnected");
@@ -187,6 +228,9 @@ void loop() {
                 if (audioReady) {
                     g_status->updateAudioStatus(true);
                     ESP_LOGI("INTEGRATED_TEST", "Audio system ready");
+                    ESP_LOGI("MemoryTest", "After audio system ready...");
+                    printMemoryStatus();
+                    //delay(1000);
                 } else {
                     g_status->updateAudioStatus(false);
                     ESP_LOGI("INTEGRATED_TEST", "Audio system not ready");

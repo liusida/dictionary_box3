@@ -8,17 +8,13 @@ namespace dict {
 
 static const char *TAG = "AudioManager";
 
-extern NetworkControl* g_network;
+extern NetworkControl *g_network;
 
 AudioManager::AudioManager()
-    : board(AudioDriverES8311, NoPins), out(board), info(32000, 2, 16), 
-      player(nullptr), decoder(), urlSource(nullptr), fileSource(nullptr), 
-      urlStream(), initialized_(false), isPlaying(false), currentUrl(""), volume_(0.7f) {
-}
+    : board(AudioDriverES8311, NoPins), out(board), info(32000, 2, 16), player(nullptr), decoder(), urlSource(nullptr), fileSource(nullptr),
+      urlStream(), initialized_(false), isPlaying(false), currentUrl(""), volume_(0.7f) {}
 
-AudioManager::~AudioManager() {
-    shutdown();
-}
+AudioManager::~AudioManager() { shutdown(); }
 
 bool AudioManager::initialize() {
     ESP_LOGI(TAG, "=== AudioManager::initialize() called ===");
@@ -28,7 +24,7 @@ bool AudioManager::initialize() {
     }
 
     ESP_LOGI(TAG, "Initializing audio pins...");
-    
+
     // Ensure I2C is initialized before use
     if (!I2CManager::instance().isReady()) {
         ESP_LOGI(TAG, "I2C not ready, initializing...");
@@ -37,12 +33,13 @@ bool AudioManager::initialize() {
             return false;
         }
     }
-    
+
     DriverPins pins;
-    
+
     ESP_LOGI(TAG, "Bus Number: %d", I2CManager::instance().getWire().getBusNum());
     // I2C is already initialized by I2CManager - disable AudioTools I2C initialization
-    pins.addI2C(PinFunction::CODEC, SHARED_I2C_SCL, SHARED_I2C_SDA, I2CManager::instance().getWire().getBusNum(), I2CManager::instance().getFrequency(), I2CManager::instance().getWire(), false);
+    pins.addI2C(PinFunction::CODEC, SHARED_I2C_SCL, SHARED_I2C_SDA, I2CManager::instance().getWire().getBusNum(),
+                I2CManager::instance().getFrequency(), I2CManager::instance().getWire(), false);
     pins.addI2S(PinFunction::CODEC, I2S_MCLK, I2S_SCLK, I2S_WS, I2S_DOUT); // MCLK=2, BCLK=17, WS=45, DOUT=15
     pins.addPin(PinFunction::PA, PA_PIN, PinLogic::Output);
     board.setPins(pins);
@@ -55,9 +52,6 @@ bool AudioManager::initialize() {
     }
     out.setVolume(0.7f);
 
-    // Don't create player here - create it when we have a source
-    // This avoids initialization issues
-
     initialized_ = true;
     ESP_LOGI(TAG, "AudioManager initialized successfully");
     return true;
@@ -69,7 +63,7 @@ void AudioManager::shutdown() {
     }
 
     ESP_LOGI(TAG, "Shutting down AudioManager...");
-    
+
     // Stop any current playback
     if (isPlaying) {
         stop();
@@ -97,19 +91,29 @@ void AudioManager::tick() {
     if (!initialized_ || !player) {
         return;
     }
-    if (player->getStream() && player->getStream()->available()) {
-        player->copy();
+    if (player && player->getStream()) {
+        if (player->isActive()) {
+            player->copy();
+        } else { // timeout detected, clean up
+            if (isPlaying) {
+                isPlaying = false; // Stop the player before cleaning up
+                player->end();
+                delete player;
+                player = nullptr;
+                cleanupSources();
+            }
+        }
     }
 }
 
-bool AudioManager::play(const char* url) {
+bool AudioManager::play(const char *url) {
     if (!initialized_) {
         ESP_LOGE(TAG, "AudioManager not initialized");
         return false;
     }
 
     ESP_LOGI(TAG, "Playing: %s", url);
-    
+
     // Clean up any existing player and sources
     if (player) {
         player->end();
@@ -117,7 +121,9 @@ bool AudioManager::play(const char* url) {
         player = nullptr;
     }
     cleanupSources();
-    
+    decoder.end();
+    decoder.begin();
+
     // Create appropriate source based on URL/file
     if (isUrl(url)) {
         createUrlSource(url);
@@ -143,16 +149,21 @@ bool AudioManager::play(const char* url) {
     }
 
     // Set up metadata callback
-    player->setMetadataCallback(staticMetadataCallback);
+    // player->setMetadataCallback(staticMetadataCallback);
+    // this has some bug. playing apple explanation will cause:
+    //  [ 43841][I][audio_manager.cpp:266] staticMetadataCallback(): [AudioManager] Metadata [Title]: ��0
+    //  [ 43842][I][audio_manager.cpp:266] staticMetadataCallback(): [AudioManager] Metadata [Artist]: �+[x��٬��T�␌␂V�␟␗���.r��Օ�*D
+    //     �y��842][I][audio_manager.cpp:266] staticMetadataCallback(): [AudioManager] Metadata [Album]: �y�����6T�␘��ԗ��␚�␡��YeS
+    //  [ 43842][I][audio_manager.cpp:266] staticMetadataCallback(): [AudioManager] Metadata [Other]: Drum Solo
 
     // Start playback
     if (player->begin()) {
         currentUrl = String(url);
         isPlaying = true;
-        
+
         // Publish audio event
         EventPublisher::instance().publish(AudioEvent(AudioEvent::PlaybackStarted, String(url)));
-        
+
         ESP_LOGI(TAG, "Playback started successfully");
         return true;
     } else {
@@ -168,23 +179,21 @@ bool AudioManager::stop() {
 
     if (isPlaying) {
         ESP_LOGI(TAG, "Stopping playback");
-        
+
         player->stop();
         isPlaying = false;
-        
+
         // Publish audio event
         EventPublisher::instance().publish(AudioEvent(AudioEvent::PlaybackStopped, currentUrl));
-        
+
         currentUrl = "";
         ESP_LOGI(TAG, "Playback stopped");
     }
-    
+
     return true;
 }
 
-bool AudioManager::isCurrentlyPlaying() const {
-    return isPlaying && player && player->isActive();
-}
+bool AudioManager::isCurrentlyPlaying() const { return isPlaying && player && player->isActive(); }
 
 bool AudioManager::isCurrentlyPaused() const {
     return false; // AudioPlayer doesn't have pause functionality in this implementation
@@ -194,19 +203,19 @@ void AudioManager::setVolume(float volume) {
     if (!initialized_ || !player) {
         return;
     }
-    
-    if (volume < 0.0f) volume = 0.0f;
-    if (volume > 1.0f) volume = 1.0f;
+
+    if (volume < 0.0f)
+        volume = 0.0f;
+    if (volume > 1.0f)
+        volume = 1.0f;
     volume_ = volume;
     out.setVolume(volume_);
     ESP_LOGI(TAG, "Volume set to: %.2f", volume_);
 }
 
-bool AudioManager::isUrl(const char* path) const {
-    return strstr(path, "http://") == path || strstr(path, "https://") == path;
-}
+bool AudioManager::isUrl(const char *path) const { return strstr(path, "http://") == path || strstr(path, "https://") == path; }
 
-void AudioManager::createUrlSource(const char* url) {
+void AudioManager::createUrlSource(const char *url) {
     ESP_LOGI(TAG, "Creating URL source for: %s", url);
 
     WiFiClientSecure client;
@@ -216,18 +225,19 @@ void AudioManager::createUrlSource(const char* url) {
     // Create URL source with single URL
     urlSource = new AudioSourceDynamicURLNoAutoNext(urlStream, "audio/mp3");
     urlSource->addURL(url);
+    urlSource->setTimeoutAutoNext(2000); // if no data for 2 sec, stop the player
 
     if (!urlSource) {
         ESP_LOGE(TAG, "Failed to create AudioSourceURL");
     }
 }
 
-void AudioManager::createFileSource(const char* filePath) {
+void AudioManager::createFileSource(const char *filePath) {
     ESP_LOGI(TAG, "Creating file source for: %s", filePath);
-    
+
     // Create LittleFS source
     fileSource = new AudioSourceLittleFSMounted();
-    
+
     if (!fileSource) {
         ESP_LOGE(TAG, "Failed to create AudioSourceLittleFSMounted");
     }
@@ -238,18 +248,19 @@ void AudioManager::cleanupSources() {
         delete urlSource;
         urlSource = nullptr;
     }
-    
+
     if (fileSource) {
         delete fileSource;
         fileSource = nullptr;
     }
 }
 
-void AudioManager::staticMetadataCallback(MetaDataType type, const char* str, int len) {
-    ESP_LOGI(TAG, "Metadata [%s]: %.*s", 
-             type == MetaDataType::Title ? "Title" :
-             type == MetaDataType::Artist ? "Artist" :
-             type == MetaDataType::Album ? "Album" : "Other",
+void AudioManager::staticMetadataCallback(MetaDataType type, const char *str, int len) {
+    ESP_LOGI(TAG, "Metadata [%s]: %.*s",
+             type == MetaDataType::Title    ? "Title"
+             : type == MetaDataType::Artist ? "Artist"
+             : type == MetaDataType::Album  ? "Album"
+                                            : "Other",
              len, str);
 }
 

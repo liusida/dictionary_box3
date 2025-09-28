@@ -1,5 +1,6 @@
 #pragma once
 #include "common.h"
+#include "psram_allocator.h"
 #include <Preferences.h>
 #include <NimBLEDevice.h>
 #include <functional>
@@ -41,7 +42,7 @@ class BLEKeyboard {
     std::vector<String> getDiscoveredDevices(); // Get list of discovered device names
 
   protected:
-    std::vector<std::pair<String, String>> discoveredDevices;
+    std::vector<std::pair<String, String>, PsramAllocator<std::pair<String, String>>> discoveredDevices;
 
   private:
     // Private member variables

@@ -1,6 +1,7 @@
 #pragma once
 #include "common.h"
 #include "events.h"
+#include "psram_allocator.h"
 #include <queue>
 #include <mutex>
 #include <functional>
@@ -43,7 +44,7 @@ public:
      * @brief Process all queued events (call from main loop)
      */
     void processEvents() {
-        std::queue<T> eventsToProcess;
+        std::queue<T, std::deque<T, PsramAllocator<T>>> eventsToProcess;
         
         // Move events from queue to local queue (minimize lock time)
         {
@@ -81,8 +82,8 @@ public:
     }
     
 private:
-    std::vector<Listener> listeners_;
-    std::queue<T> eventQueue_;
+    std::vector<Listener, PsramAllocator<Listener>> listeners_;
+    std::queue<T, std::deque<T, PsramAllocator<T>>> eventQueue_;
     std::mutex eventQueueMutex_;
 };
 
@@ -127,7 +128,7 @@ private:
     EventSystem() = default;
     
     // Additional processors registered by users for custom event types
-    std::vector<std::function<void()>> processors_;
+    std::vector<std::function<void()>, PsramAllocator<std::function<void()>>> processors_;
     std::mutex processorsMutex_;
 };
 

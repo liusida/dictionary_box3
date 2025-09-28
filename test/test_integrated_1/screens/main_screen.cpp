@@ -151,7 +151,9 @@ void MainScreen::onFunctionKeyEvent(const FunctionKeyEvent &event) {
         break;
     }
     ESP_LOGI(TAG, "Playing audio: %s", audioUrl.url.c_str());
-    g_audio->play(audioUrl.url.c_str());
+    if (g_audio) {
+        g_audio->play(audioUrl.url.c_str());
+    }
 }
 
 void MainScreen::onConnectionReady() {
