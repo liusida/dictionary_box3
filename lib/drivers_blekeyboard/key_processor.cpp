@@ -50,6 +50,7 @@ FunctionKeyEvent::Type KeyProcessor::convertKeyCodeToFunction(uint8_t keyCode) {
         // HID usage IDs: F1=58, F2=59, F3=60, F4=61, F5=62, F6=63, F7=64, F8=65, F9=66, F10=67, F11=68, F12=69
         case 67: return FunctionKeyEvent::VolumeDown;       // F10 -> VolumeDown
         case 68: return FunctionKeyEvent::VolumeUp;         // F11 -> VolumeUp
+        case 69: return FunctionKeyEvent::WifiSettings;     // F12 -> WifiSettings
         case 58: return FunctionKeyEvent::PrintMemoryStatus; // F1  -> PrintMemoryStatus
         case 59: return FunctionKeyEvent::ReadWord;          // F2  -> ReadWord
         case 60: return FunctionKeyEvent::ReadExplanation;   // F3  -> ReadExplanation

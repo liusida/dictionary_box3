@@ -107,6 +107,7 @@ struct FunctionKeyEvent {
         None = 0,
         VolumeDown,
         VolumeUp,
+        WifiSettings,
         PrintMemoryStatus,
         ReadWord,
         ReadExplanation,

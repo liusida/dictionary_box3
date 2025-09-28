@@ -12,7 +12,7 @@ class BLEKeyboard::ClientCallbacks : public NimBLEClientCallbacks {
     void onConnect(NimBLEClient *pClient) override { ESP_LOGI(TAG, "Connected"); }
     void onDisconnect(NimBLEClient *pClient, int reason) override {
         ESP_LOGW(TAG, "%s Disconnected, reason = %d - Starting scan", pClient->getPeerAddress().toString().c_str(), reason);
-        keyboard->advDevice = nullptr;
+        keyboard->advDeviceAddress = "";
         keyboard->toKeyboardSettings = true;
         keyboard->pScan->start(keyboard->scanTimeMs, false, true);
     }
@@ -33,7 +33,7 @@ class BLEKeyboard::ScanCallbacks : public NimBLEScanCallbacks {
             ESP_LOGD(TAG, "Found Device: %s", deviceAddr.c_str());
             keyboard->discoveredDevices.push_back(std::make_pair(deviceAddr, deviceAddr));
         }
-        if (keyboard->preferences.getString("addr").equals(String(advertisedDevice->getAddress().toString().c_str()))) {
+        if (keyboard->preferences.getString("addr").equals(deviceAddr)) {
             found = true;
         }
         if (advertisedDevice->isAdvertisingService(NimBLEUUID(BLE_SERVICE_UUID))) {
@@ -41,9 +41,9 @@ class BLEKeyboard::ScanCallbacks : public NimBLEScanCallbacks {
         }
         if (found) {
             ESP_LOGI(TAG, "Found Our Service");
-            keyboard->preferences.putString("addr", advertisedDevice->getAddress().toString().c_str());
+            keyboard->preferences.putString("addr", deviceAddr);
             keyboard->pScan->stop();
-            keyboard->advDevice = advertisedDevice;
+            keyboard->advDeviceAddress = deviceAddr;
             keyboard->doConnect = true;
         }
     }
@@ -58,7 +58,7 @@ class BLEKeyboard::ScanCallbacks : public NimBLEScanCallbacks {
 static BLEKeyboard *keyboardInstance = nullptr;
 
 BLEKeyboard::BLEKeyboard()
-    : initialized_(false), scanning_(false), scanStartTime_(0), scanEndTime_(0), advDevice(nullptr), doConnect(false), powerLevel(-15), scanTimeMs(500), scanRestartIntervalMs(0), clientCallbacks(nullptr),
+    : initialized_(false), scanning_(false), scanStartTime_(0), scanEndTime_(0), advDeviceAddress(""), doConnect(false), powerLevel(-15), scanTimeMs(500), scanRestartIntervalMs(0), clientCallbacks(nullptr),
       scanCallbacks(nullptr), keyCallback(nullptr), toKeyboardSettings(false) {
     clientCallbacks = new ClientCallbacks(this);
     scanCallbacks = new ScanCallbacks(this);
@@ -139,10 +139,15 @@ void BLEKeyboard::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, ui
 
 bool BLEKeyboard::connectToServer() {
     NimBLEClient *pClient = nullptr;
+    if (advDeviceAddress.isEmpty()) {
+        ESP_LOGW(TAG, "No device address to connect to");
+        return false;
+    }    
+    NimBLEAddress targetAddress(advDeviceAddress.c_str(), BLE_ADDR_PUBLIC);
     if (NimBLEDevice::getCreatedClientCount()) {
-        pClient = NimBLEDevice::getClientByPeerAddress(advDevice->getAddress());
+        pClient = NimBLEDevice::getClientByPeerAddress(targetAddress);
         if (pClient) {
-            if (!pClient->connect(advDevice, false)) {
+            if (!pClient->connect(targetAddress, false)) {
                 ESP_LOGW(TAG, "Reconnect failed");
                 return false;
             }
@@ -161,14 +166,14 @@ bool BLEKeyboard::connectToServer() {
         pClient->setClientCallbacks(clientCallbacks, false);
         pClient->setConnectionParams(12, 12, 0, 150);
         pClient->setConnectTimeout(5 * 1000);
-        if (!pClient->connect(advDevice)) {
+        if (!pClient->connect(targetAddress)) {
             NimBLEDevice::deleteClient(pClient);
             ESP_LOGW(TAG, "Failed to connect, deleted client");
             return false;
         }
     }
     if (!pClient->isConnected()) {
-        if (!pClient->connect(advDevice)) {
+        if (!pClient->connect(targetAddress)) {
             ESP_LOGW(TAG, "Failed to connect");
             return false;
         }
@@ -307,15 +312,15 @@ char BLEKeyboard::convertKeyCodeToChar(uint8_t keyCode, uint8_t modifiers) {
 }
 
 bool BLEKeyboard::isConnected() const {
-    if (advDevice) {
-        NimBLEClient *pClient = NimBLEDevice::getClientByPeerAddress(advDevice->getAddress());
+    if (advDeviceAddress.length() > 0) {
+        NimBLEClient *pClient = NimBLEDevice::getClientByPeerAddress(NimBLEAddress(advDeviceAddress.c_str(), BLE_ADDR_PUBLIC));
         if (pClient && pClient->isConnected()) {
             return true;
         }
     }
     uint32_t t0 = millis();
     if (millis() - t0 > 5000) {
-        ESP_LOGD(TAG, "advDevice: %p", advDevice);
+        ESP_LOGD(TAG, "advDevice: %s", advDeviceAddress.c_str());
     }
     return false;
 }
@@ -342,13 +347,14 @@ std::vector<String> BLEKeyboard::getDiscoveredDevices() {
 }
 
 bool BLEKeyboard::connectToDevice(const String &deviceName) {
+    //TODO: This function is only called in KeyboardSettingsScreen. Might be able to remove it.
     ESP_LOGI(TAG, "Attempting to connect to device: %s", deviceName.c_str());
     for (const auto &device : discoveredDevices) {
         if (device.first == deviceName) {
             ESP_LOGI(TAG, "Found device %s with address %s", device.first.c_str(), device.second.c_str());
             preferences.putString("addr", device.second);
             doConnect = true;
-            advDevice = nullptr;
+            advDeviceAddress = device.second;
             return true;
         }
     }

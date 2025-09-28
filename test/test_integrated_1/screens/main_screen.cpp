@@ -9,7 +9,7 @@ static const char *TAG = "MainScreen";
 
 extern AudioManager *g_audio;
 
-MainScreen::MainScreen() : initialized_(false), visible_(false) {}
+MainScreen::MainScreen() : initialized_(false), visible_(false), isWifiSettings_(false) {}
 
 MainScreen::~MainScreen() { shutdown(); }
 
@@ -47,6 +47,7 @@ void MainScreen::show() {
     if (!initialized_) {
         return;
     }
+    isWifiSettings_ = false;
 
     // Initialize and show the main UI screen
     lv_disp_load_scr(ui_Main);
@@ -132,24 +133,30 @@ void MainScreen::onKeyIn(char key) {
 }
 
 void MainScreen::onFunctionKeyEvent(const FunctionKeyEvent &event) {
-    if (currentWord_.length() == 0) {
-        return;
-    }
     ESP_LOGD(TAG, "Function key input: %d", event.type);
-    AudioUrl audioUrl;
     switch (event.type) {
     case FunctionKeyEvent::ReadWord:
-        audioUrl = dictionaryApi_.getAudioUrl(currentWord_, "word");
+        onPlayAudio("word");
         break;
     case FunctionKeyEvent::ReadExplanation:
-        audioUrl = dictionaryApi_.getAudioUrl(currentWord_, "explanation");
+        onPlayAudio("explanation");
         break;
     case FunctionKeyEvent::ReadSampleSentence:
-        audioUrl = dictionaryApi_.getAudioUrl(currentWord_, "sample");
+        onPlayAudio("sample");
+        break;
+    case FunctionKeyEvent::WifiSettings:
+        onWifiSettings();
         break;
     default:
         break;
     }
+}
+
+void MainScreen::onPlayAudio(const String& audioType) {
+    if (currentWord_.length() == 0) {
+        return;
+    }
+    AudioUrl audioUrl = dictionaryApi_.getAudioUrl(currentWord_, audioType);
     ESP_LOGI(TAG, "Playing audio: %s", audioUrl.url.c_str());
     if (g_audio) {
         g_audio->play(audioUrl.url.c_str());
@@ -159,6 +166,19 @@ void MainScreen::onFunctionKeyEvent(const FunctionKeyEvent &event) {
 void MainScreen::onConnectionReady() {
     if (dictionaryApi_.isReady()) {
         dictionaryApi_.prewarm();
+    }
+}
+
+void MainScreen::onWifiSettings() {
+    ESP_LOGI(TAG, "Wifi settings");
+    if (!isWifiSettings_) {
+        ui_WIFI_Settings_screen_init();
+        lv_disp_load_scr(ui_WIFI_Settings);
+        isWifiSettings_ = true;
+    } else {
+        lv_disp_load_scr(ui_Main);  // Switch back to main screen
+        ui_WIFI_Settings_screen_destroy();  // Destroy the WiFi settings screen
+        isWifiSettings_ = false;
     }
 }
 

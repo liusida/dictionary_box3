@@ -71,6 +71,7 @@ void AudioManager::shutdown() {
 
     // Clean up player
     if (player) {
+        player->stop();
         player->end();
         delete player;
         player = nullptr;
@@ -97,6 +98,7 @@ void AudioManager::tick() {
         } else { // timeout detected, clean up
             if (isPlaying) {
                 isPlaying = false; // Stop the player before cleaning up
+                player->stop();
                 player->end();
                 delete player;
                 player = nullptr;
@@ -115,13 +117,15 @@ bool AudioManager::play(const char *url) {
     ESP_LOGI(TAG, "Playing: %s", url);
 
     // Clean up any existing player and sources
+    
     if (player) {
+        player->stop();
         player->end();
+        decoder.end();
         delete player;
         player = nullptr;
     }
     cleanupSources();
-    decoder.end();
     decoder.begin();
 
     // Create appropriate source based on URL/file

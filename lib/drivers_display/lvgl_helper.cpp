@@ -85,6 +85,10 @@ static void handleFunctionKeyEvent(const FunctionKeyEvent& ev) {
                 g_audio->setVolume(g_audio->getVolume() + 0.05);
             }
             break;
+        case FunctionKeyEvent::WifiSettings:
+            ESP_LOGI(TAG, "F12 pressed - wifi settings");
+            if (s_onFunctionKeyIn) s_onFunctionKeyIn(FunctionKeyEvent::WifiSettings);
+            break;
         case FunctionKeyEvent::ReadWord:
             ESP_LOGI(TAG, "F2 pressed - read word");
             if (s_onFunctionKeyIn) s_onFunctionKeyIn(FunctionKeyEvent::ReadWord);

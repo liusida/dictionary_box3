@@ -24,13 +24,16 @@ public:
     void onKeyIn(char key);
     void onFunctionKeyEvent(const FunctionKeyEvent& event);
     void onConnectionReady();
-
+    void onWifiSettings();
+    void onPlayAudio(const String& audioType);
+    
 private:
     bool initialized_;
     bool visible_;
     String currentWord_;
     DictionaryApi dictionaryApi_;
     DictionaryResult currentResult_;
+    bool isWifiSettings_;
 };
 
 } // namespace dict

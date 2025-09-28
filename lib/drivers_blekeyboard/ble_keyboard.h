@@ -50,7 +50,7 @@ class BLEKeyboard {
     bool scanning_;
     uint32_t scanStartTime_;
     uint32_t scanEndTime_;
-    const NimBLEAdvertisedDevice *advDevice;
+    String advDeviceAddress;
     bool doConnect;
     int powerLevel;
     uint32_t scanTimeMs;
