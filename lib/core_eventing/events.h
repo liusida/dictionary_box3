@@ -115,7 +115,8 @@ struct FunctionKeyEvent {
         DownArrow,
         UpArrow,
         LeftArrow,
-        RightArrow
+        RightArrow,
+        Escape
     };
     Type type;
     

@@ -1,8 +1,8 @@
 #include "main_screen.h"
 #include "drivers_audio/audio_manager.h"
 #include "drivers_display/lvgl_helper.h"
-#include "ui_status/ui_status.h"
 #include "ui.h"
+#include "ui_status/ui_status.h"
 
 namespace dict {
 
@@ -182,6 +182,9 @@ void MainScreen::onFunctionKeyEvent(const FunctionKeyEvent &event) {
   case FunctionKeyEvent::UpArrow:
     onUpArrow();
     break;
+  case FunctionKeyEvent::Escape:
+    onEscape();
+    break;
   default:
     break;
   }
@@ -232,43 +235,65 @@ void MainScreen::onBackFromWifiSettings() {
 }
 
 void MainScreen::onDownArrow() {
-  if (ui_Result == nullptr) return;
-    
+  if (ui_Result == nullptr)
+    return;
+
   // Check if there's content below to scroll to
   int32_t scroll_bottom = lv_obj_get_scroll_bottom(ui_Result);
   if (scroll_bottom > 0) {
-      // Scroll down by a fixed amount (e.g., 50 pixels)
-      int32_t current_y = lv_obj_get_scroll_y(ui_Result);
-      int32_t new_y = current_y + 50;
-      
-      // Don't scroll beyond the bottom
-      int32_t max_scroll = lv_obj_get_scroll_top(ui_Result) + lv_obj_get_scroll_bottom(ui_Result);
-      if (new_y > max_scroll) new_y = max_scroll;
-      
-      lv_obj_scroll_to_y(ui_Result, new_y, LV_ANIM_ON);
-      ESP_LOGI(TAG, "Scrolled down to: %d", new_y);
+    // Scroll down by a fixed amount (e.g., 50 pixels)
+    int32_t current_y = lv_obj_get_scroll_y(ui_Result);
+    int32_t new_y = current_y + 50;
+
+    // Don't scroll beyond the bottom
+    int32_t max_scroll = lv_obj_get_scroll_top(ui_Result) + lv_obj_get_scroll_bottom(ui_Result);
+    if (new_y > max_scroll)
+      new_y = max_scroll;
+
+    lv_obj_scroll_to_y(ui_Result, new_y, LV_ANIM_ON);
+    ESP_LOGI(TAG, "Scrolled down to: %d", new_y);
   } else {
-      ESP_LOGI(TAG, "Already at bottom");
+    ESP_LOGI(TAG, "Already at bottom");
   }
 }
 
 void MainScreen::onUpArrow() {
-  if (ui_Result == nullptr) return;
-    
+  if (ui_Result == nullptr)
+    return;
+
   // Check if there's content above to scroll to
   int32_t scroll_top = lv_obj_get_scroll_top(ui_Result);
   if (scroll_top > 0) {
-      // Scroll up by a fixed amount (e.g., 50 pixels)
-      int32_t current_y = lv_obj_get_scroll_y(ui_Result);
-      int32_t new_y = current_y - 50;
-      
-      // Don't scroll beyond the top
-      if (new_y < 0) new_y = 0;
-      
-      lv_obj_scroll_to_y(ui_Result, new_y, LV_ANIM_ON);
-      ESP_LOGI(TAG, "Scrolled up to: %d", new_y);
+    // Scroll up by a fixed amount (e.g., 50 pixels)
+    int32_t current_y = lv_obj_get_scroll_y(ui_Result);
+    int32_t new_y = current_y - 50;
+
+    // Don't scroll beyond the top
+    if (new_y < 0)
+      new_y = 0;
+
+    lv_obj_scroll_to_y(ui_Result, new_y, LV_ANIM_ON);
+    ESP_LOGI(TAG, "Scrolled up to: %d", new_y);
   } else {
-      ESP_LOGI(TAG, "Already at top");
+    ESP_LOGI(TAG, "Already at top");
+  }
+}
+
+void MainScreen::onEscape() {
+  if (isWifiSettings_) {
+    onBackFromWifiSettings();
+    return;
+  }
+  if (isScreenActive_) {
+    if (ui_InputWord) {
+      if (!lv_obj_has_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN)) {
+        lv_textarea_set_text(ui_InputWord, "");
+      } else {
+        lv_obj_remove_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_TxtWord, LV_OBJ_FLAG_HIDDEN);
+        lv_group_focus_obj(ui_InputWord);
+      }
+    }
   }
 }
 

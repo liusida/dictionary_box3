@@ -283,7 +283,7 @@ char BLEKeyboard::convertKeyCodeToChar(uint8_t keyCode, uint8_t modifiers) {
     case 0x28:
         return '\n';
     case 0x29:
-        return 0x08;
+        return 0; // ESCAPE, go through to function key handler
     case 0x2A:
         return 0x08;
     case 0x2B:

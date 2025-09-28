@@ -59,6 +59,7 @@ FunctionKeyEvent::Type KeyProcessor::convertKeyCodeToFunction(uint8_t keyCode) {
         case 82: return FunctionKeyEvent::UpArrow;            // Up Arrow -> UpArrow
         case 80: return FunctionKeyEvent::LeftArrow;            // Left Arrow -> LeftArrow
         case 79: return FunctionKeyEvent::RightArrow;            // Right Arrow -> RightArrow
+        case 41: return FunctionKeyEvent::Escape;               // ESC
         default: return FunctionKeyEvent::None;
     }
 }

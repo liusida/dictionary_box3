@@ -30,6 +30,7 @@ public:
     void onPlayAudio(const String& audioType);
     void onDownArrow();
     void onUpArrow();
+    void onEscape();
     
 private:
     bool initialized_;

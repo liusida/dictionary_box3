@@ -50,7 +50,10 @@ static void handleKeyEvent(const KeyEvent& ev) {
     lv_obj_t *focused = lv_group_get_focused(group);
     if (focused && lv_obj_has_class(focused, &lv_textarea_class)) {
         if (key == 0x08) {
-            lv_textarea_delete_char(focused);
+            const char *text = lv_textarea_get_text(focused);
+            if (text && strlen(text) > 0) {
+                lv_textarea_delete_char(focused);
+            }
         } else if (key == '\n') {
             lv_textarea_t *ta = (lv_textarea_t *)focused;
             if (ta->one_line) {
@@ -86,35 +89,15 @@ static void handleFunctionKeyEvent(const FunctionKeyEvent& ev) {
             }
             break;
         case FunctionKeyEvent::WifiSettings:
-            ESP_LOGI(TAG, "F12 pressed - wifi settings");
-            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
-            break;
         case FunctionKeyEvent::ReadWord:
-            ESP_LOGI(TAG, "F2 pressed - read word");
-            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
-            break;
         case FunctionKeyEvent::ReadExplanation:
-            ESP_LOGI(TAG, "F3 pressed - read explanation");
-            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
-            break;
         case FunctionKeyEvent::ReadSampleSentence:
-            ESP_LOGI(TAG, "F4 pressed - read sample sentence");
-            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
-            break;
         case FunctionKeyEvent::DownArrow:
-            ESP_LOGI(TAG, "Down Arrow pressed");
-            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
-            break;
         case FunctionKeyEvent::UpArrow:
-            ESP_LOGI(TAG, "Up Arrow pressed");
-            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
-            break;
         case FunctionKeyEvent::LeftArrow:
-            ESP_LOGI(TAG, "Left Arrow pressed");
-            if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
-            break;
         case FunctionKeyEvent::RightArrow:
-            ESP_LOGI(TAG, "Right Arrow pressed");
+        case FunctionKeyEvent::Escape:
+            ESP_LOGI(TAG, "Function key passed to callback");
             if (s_onFunctionKeyIn) s_onFunctionKeyIn(ev.type);
             break;
         default:
