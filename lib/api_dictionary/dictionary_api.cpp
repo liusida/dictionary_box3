@@ -30,13 +30,9 @@ DictionaryApi::~DictionaryApi() {
 
 bool DictionaryApi::initialize() {
     if (initialized_) {
-        ESP_LOGI(TAG, "Dictionary API already initialized");
         return true;
     }
-    
-    ESP_LOGI(TAG, "Initializing dictionary API client...");
     initialized_ = true;
-    ESP_LOGI(TAG, "Dictionary API client initialized");
     return true;
 }
 
@@ -44,9 +40,11 @@ void DictionaryApi::shutdown() {
     if (!initialized_) {
         return;
     }
-    
-    ESP_LOGI(TAG, "Shutting down dictionary API client...");
     initialized_ = false;
+}
+
+bool DictionaryApi::isReady() const {
+    return initialized_ && WiFi.status() == WL_CONNECTED;
 }
 
 DictionaryResult DictionaryApi::lookupWord(const String& word) {
@@ -209,26 +207,6 @@ AudioUrl DictionaryApi::getAudioUrl(const String& word, const String& audioType)
     ESP_LOGD(TAG, "Generated audio URL: %s", url.c_str());
     
     return AudioUrl(url, audioType, true);
-}
-
-bool DictionaryApi::isReady() const {
-    return initialized_ && WiFi.status() == WL_CONNECTED;
-}
-
-void DictionaryApi::setBaseUrl(const String& url) {
-    baseUrl_ = url;
-}
-
-String DictionaryApi::getBaseUrl() const {
-    return baseUrl_;
-}
-
-void DictionaryApi::setAudioBaseUrl(const String& url) {
-    audioBaseUrl_ = url;
-}
-
-String DictionaryApi::getAudioBaseUrl() const {
-    return audioBaseUrl_;
 }
 
 String DictionaryApi::urlEncode(const String& str) {

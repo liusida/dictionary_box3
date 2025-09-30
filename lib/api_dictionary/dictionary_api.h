@@ -55,12 +55,6 @@ public:
     AudioUrl getAudioUrl(const String& word, const String& audioType); // Get audio URL for a word
     void prewarm(); // Prewarm the API client
     
-    // Configuration methods
-    void setBaseUrl(const String& url); // Set the base URL for the dictionary API
-    String getBaseUrl() const; // Get the current base URL
-    void setAudioBaseUrl(const String& url); // Set the base URL for audio streaming
-    String getAudioBaseUrl() const; // Get the current audio base URL
-    
     // Helper methods (public for testing)
     String urlEncode(const String& str); // URL encode a string
     bool isWordValid(const String& word); // Validate word input
