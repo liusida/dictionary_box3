@@ -46,12 +46,6 @@ public:
     void setIndicatorSize(uint8_t size); // Set size of status indicators
     void setAnimationDuration(uint16_t duration); // Set animation duration for status changes
     
-    // Blinking control methods
-    void setWiFiBlinking(bool enable); // Enable/disable WiFi indicator blinking
-    void setBLEBlinking(bool enable); // Enable/disable BLE indicator blinking
-    void setAudioBlinking(bool enable); // Enable/disable Audio indicator blinking
-    void setBlinkInterval(uint16_t intervalMs); // Set blinking interval in milliseconds
-
     // Utility/getter methods
     lv_obj_t* getContainer() const { return container_; } // Get LVGL container object
     bool isAttached() const; // Check if overlay is attached to a screen
@@ -80,21 +74,12 @@ private:
     lv_color_t bleColor_;
     lv_color_t audioColor_;
     
-    // Blinking state
-    bool wifiBlinking_;
-    bool bleBlinking_;
-    bool audioBlinking_;
-    uint16_t blinkInterval_;
-    unsigned long lastBlinkTime_;
-    bool blinkState_; // Current blink state (true = visible, false = hidden)
-
     // Private methods
     void createIndicators(); // Create LVGL indicator objects
     void updateWiFiIndicator(); // Update WiFi indicator appearance
     void updateBLEIndicator(); // Update BLE indicator appearance
     void updateAudioIndicator(); // Update audio indicator appearance
-    void applyIndicatorStyle(lv_obj_t* indicator, bool active, lv_color_t activeColor, bool blinking = false); // Apply style to indicator
-    static void indicatorClickCallback(lv_event_t* e); // Handle indicator click events
+    void applyIndicatorStyle(lv_obj_t* indicator, bool active, lv_color_t activeColor); // Apply style to indicator
 };
 
 } // namespace dict

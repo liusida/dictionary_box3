@@ -9,9 +9,7 @@ StatusOverlay::StatusOverlay()
     : container_(nullptr), wifiIndicator_(nullptr), bleIndicator_(nullptr), audioIndicator_(nullptr),
       attachedScreen_(nullptr), initialized_(false), visible_(false), indicatorSize_(10),
       animationDuration_(300), wifiState_(WiFiState::None), bleConnected_(false), audioState_(AudioState::None),
-      wifiColor_(lv_color_hex(0x0ABF0F)), bleColor_(lv_color_hex(0x4098F2)), audioColor_(lv_color_hex(0xCE45DC)),
-      wifiBlinking_(false), bleBlinking_(false), audioBlinking_(false), blinkInterval_(200), 
-      lastBlinkTime_(0), blinkState_(true) {
+      wifiColor_(lv_color_hex(0x0ABF0F)), bleColor_(lv_color_hex(0x4098F2)), audioColor_(lv_color_hex(0xCE45DC)) {
 }
 
 StatusOverlay::~StatusOverlay() {
@@ -89,28 +87,6 @@ void StatusOverlay::shutdown() {
 void StatusOverlay::tick() {
     if (!initialized_ || !visible_) {
         return;
-    }
-
-    // Handle blinking animations
-    unsigned long currentTime = millis();
-    if (currentTime - lastBlinkTime_ >= blinkInterval_) {
-        blinkState_ = !blinkState_;
-        lastBlinkTime_ = currentTime;
-        
-        // Update blinking indicators
-        if (wifiBlinking_ && wifiIndicator_) {
-            ESP_LOGD(TAG, "Blinking WiFi indicator %s", blinkState_ ? "true" : "false");
-            lv_obj_set_style_bg_opa(wifiIndicator_, blinkState_ ? 255 : 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_shadow_opa(wifiIndicator_, blinkState_ ? 255 : 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-        }
-        if (bleBlinking_ && bleIndicator_) {
-            lv_obj_set_style_bg_opa(bleIndicator_, blinkState_ ? 255 : 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_shadow_opa(bleIndicator_, blinkState_ ? 255 : 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-        }
-        if (audioBlinking_ && audioIndicator_) {
-            lv_obj_set_style_bg_opa(audioIndicator_, blinkState_ ? 255 : 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_shadow_opa(audioIndicator_, blinkState_ ? 255 : 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-        }
     }
 }
 
@@ -243,26 +219,6 @@ void StatusOverlay::setAnimationDuration(uint16_t duration) {
     animationDuration_ = duration;
 }
 
-void StatusOverlay::setWiFiBlinking(bool enable) {
-    wifiBlinking_ = enable;
-    ESP_LOGI(TAG, "WiFi blinking %s", enable ? "enabled" : "disabled");
-}
-
-void StatusOverlay::setBLEBlinking(bool enable) {
-    bleBlinking_ = enable;
-    ESP_LOGI(TAG, "BLE blinking %s", enable ? "enabled" : "disabled");
-}
-
-void StatusOverlay::setAudioBlinking(bool enable) {
-    audioBlinking_ = enable;
-    ESP_LOGI(TAG, "Audio blinking %s", enable ? "enabled" : "disabled");
-}
-
-void StatusOverlay::setBlinkInterval(uint16_t intervalMs) {
-    blinkInterval_ = intervalMs;
-    ESP_LOGI(TAG, "Blink interval set to %d ms", intervalMs);
-}
-
 bool StatusOverlay::isAttached() const {
     return attachedScreen_ != nullptr;
 }
@@ -327,13 +283,13 @@ void StatusOverlay::updateWiFiIndicator() {
             break;
     }
     
-    applyIndicatorStyle(wifiIndicator_, isActive, color, wifiBlinking_);
+    applyIndicatorStyle(wifiIndicator_, isActive, color);
 }
 
 void StatusOverlay::updateBLEIndicator() {
     if (!bleIndicator_) return;
     
-    applyIndicatorStyle(bleIndicator_, bleConnected_, bleColor_, bleBlinking_);
+    applyIndicatorStyle(bleIndicator_, bleConnected_, bleColor_);
 }
 
 void StatusOverlay::updateAudioIndicator() {
@@ -357,21 +313,15 @@ void StatusOverlay::updateAudioIndicator() {
             break;
     }
     
-    applyIndicatorStyle(audioIndicator_, isActive, color, audioBlinking_);
+    applyIndicatorStyle(audioIndicator_, isActive, color);
 }
 
-void StatusOverlay::applyIndicatorStyle(lv_obj_t* indicator, bool active, lv_color_t activeColor, bool blinking) {
+void StatusOverlay::applyIndicatorStyle(lv_obj_t* indicator, bool active, lv_color_t activeColor) {
     if (!indicator) return;
     
     lv_color_t color = active ? activeColor : lv_color_hex(0x333333); // Use passed color if active, grey if inactive
     lv_obj_set_style_bg_color(indicator, color, LV_PART_MAIN | LV_STATE_DEFAULT);
     
-    // Only set opacity if not blinking (blinking is handled in tick() method)
-    if (!blinking) {
-        lv_obj_set_style_bg_opa(indicator, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_shadow_opa(indicator, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    }
-
     // Force immediate UI update for WiFi status changes
     delay(10);
     lv_timer_handler();
