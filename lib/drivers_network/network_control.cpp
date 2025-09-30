@@ -1,7 +1,6 @@
 #include "network_control.h"
 #include "esp_system.h" // for esp_random
 #include "esp_wifi.h"
-#include "event_publisher.h"
 #include "log.h"
 #include <ArduinoJson.h>
 #include <HTTPClient.h>

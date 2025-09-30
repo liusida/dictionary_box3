@@ -1,5 +1,4 @@
 #include "audio_manager.h"
-#include "core_eventing/event_publisher.h"
 #include "core_misc/log.h"
 #include "drivers_i2c/i2c_manager.h"
 #include "network_control.h"

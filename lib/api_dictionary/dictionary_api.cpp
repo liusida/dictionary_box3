@@ -1,5 +1,4 @@
 #include "dictionary_api.h"
-#include "core_eventing/event_publisher.h"
 #include "core_misc/log.h"
 #include <HTTPClient.h>
 #include <WiFi.h>

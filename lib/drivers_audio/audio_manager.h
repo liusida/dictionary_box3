@@ -1,6 +1,5 @@
 #pragma once
 #include "common.h"
-#include "core_eventing/event_publisher.h"
 #include "core_eventing/events.h"
 #include "audio_source_littlefs_mounted.h"
 #include "audio_source_dynamic_url_no_auto_next.h"
