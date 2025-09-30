@@ -63,6 +63,10 @@ void NetworkControl::shutdown() {
 bool NetworkControl::isReady() const { return initialized_; }
 
 void NetworkControl::randomizeMACAddress() {
+  if (!initialized_) {
+    ESP_LOGE(TAG, "WiFi not initialized");
+    return;
+  }
   uint8_t newMAC[6];
   esp_fill_random(newMAC, sizeof(newMAC));
   // Make sure it’s a unicast, locally administered MAC
@@ -100,7 +104,10 @@ bool NetworkControl::begin() {
   ESP_LOGI(TAG, "Starting WiFi initialization...");
   WiFi.persistent(false);
   WiFi.setAutoReconnect(false);
-  WiFi.mode(WIFI_STA);
+  if (!WiFi.mode(WIFI_STA)) {
+    ESP_LOGE(TAG, "Failed to set WiFi mode to STA");
+    return false;
+  }
   client.setCACertBundle(certs_x509_crt_bundle_start, certs_x509_crt_bundle_end - certs_x509_crt_bundle_start);
   WiFi.onEvent([this](arduino_event_id_t event, arduino_event_info_t info) { this->onWiFiEvent(event, info); });
   // Initialize preferences for NVS storage (close first if already open)
@@ -111,7 +118,6 @@ bool NetworkControl::begin() {
   }
 
   initialized_ = true;
-  // Driver initialized successfully, but not connected (following simplified architecture)
   return true;
 }
 
@@ -156,6 +162,10 @@ void NetworkControl::disconnect() {
 
 std::vector<String> NetworkControl::scanNetworks() {
   ESP_LOGI(TAG, "Scanning for available networks...");
+  if (!initialized_) {
+    ESP_LOGE(TAG, "WiFi not initialized");
+    return {};
+  }
   if (scanning_) {
     ESP_LOGW(TAG, "Scan already in progress");
     return {};
@@ -170,7 +180,6 @@ std::vector<String> NetworkControl::scanNetworks() {
   std::vector<String> networks;
 
   // Start WiFi in station mode for scanning
-  WiFi.mode(WIFI_STA);
   int n = WiFi.scanNetworks();
   ESP_LOGI(TAG, "Found %d networks", n);
 

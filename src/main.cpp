@@ -103,6 +103,7 @@ void setup() {
     g_network = new NetworkControl();
     TEST_ASSERT_TRUE_MESSAGE(g_network->initialize(), "Network control initialize failed");
     g_network->begin();
+    g_network->randomizeMACAddress();
     g_network->connectWithSavedCredentials();
     ESP_LOGI("INTEGRATED_TEST", "Network control initialized, attempting WiFi connection...");
     BOOT_MEMORY_ANALYSIS("After network control...");
