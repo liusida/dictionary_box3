@@ -17,7 +17,10 @@ bootloader.bin
 partitions.bin  
 firmware.bin
 
-(2) Install Python 3
+(Optional) You can also download this [zip file](/firmware.zip), unzip it, and then
+cd into the folder that contains the three bin files.
+
+(2) Install Python 3 (if you haven't, refer to an online guide)
 
 (3) Install esptool
 
@@ -86,12 +89,15 @@ Hash of data verified.
 Hard resetting via RTS pin...
 ```
 
-This indicates the flashing process completed successfully.
+This indicates the flashing process completed successfully. Unplug the USB cable;
+you won't need the computer afterward.
 
 # First-time Use
 
-(1) After flashing, unplug the USB cable, insert the battery, and power on.  
+(1) Insert the battery and power on.  
 (You can also press the Reset button to power on.)
+
+<img src="images/main_screen.png" alt="Main Screen" width="300">
 
 (2) When you see the home screen, put your BLE keyboard into pairing mode  
 (hold the FN key, then hold the blue BT key for about 3 seconds).  
@@ -99,11 +105,16 @@ Pairing is only required on first use.
 
 (3) A blue dot will appear in the top-right of the home screen, indicating Bluetooth is connected.
 
-(4) Press the F12 key to open Wi‑Fi settings. Wait for scan results, select your Wi‑Fi, enter the password, and press Enter to confirm.
+(4) Press the F12 key on the Bluetooth keyboard to open Wi‑Fi settings. Wait for
+scan results, select your Wi‑Fi, enter the password, and press Enter to confirm.
+
+<img src="images/wifi_settings.png" alt="WiFi Settings" width="300">
 
 (5) You will return to the home screen. After a short wait, a green dot will appear in the top-right, indicating Wi‑Fi is connected.
 
 (6) You can now type words to look them up.
+
+<img src="images/lookup.png" alt="Lookup" width="300">
 
 # Power Off
 
@@ -119,6 +130,13 @@ After a moment, wait until the three dots at the top-right indicate ready.
 (3) After a word is displayed, press F2 to play word pronunciation, F3 for the explanation audio, and F4 for the example sentence audio.
 
 (4) Word lookup and audio playback require a server connection. Network speed may vary; please be patient.
+
+(5) When idle for a long time, the Bluetooth keyboard may sleep and the blue dot
+will dim. To continue typing, press any key to wake the keyboard and wait for the
+blue dot to reappear before typing.
+
+(6) If the network disconnects, the green dot will dim. Press F12 to rescan and
+reconnect to Wi‑Fi.
 
 # Feedback
 

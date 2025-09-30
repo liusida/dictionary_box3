@@ -2,8 +2,10 @@
 
 (1) ESP32 S3 Box 3 套件
 https://item.taobao.com/item.htm?id=732842971319
+
 (2) BLE 蓝牙迷你键盘
 https://item.taobao.com/item.htm?id=852619375987
+
 (3) 18650 充电锂电池 （尖头）
 https://detail.tmall.com/item.htm?id=664521581992
 
@@ -15,7 +17,9 @@ bootloader.bin
 partitions.bin
 firmware.bin
 
-(2) 安装 Python 3
+也可以下载这个 [zip文件](/firmware.zip) 并解压，然后到含有三个 bin 文件的目录下。
+
+(2) 安装 Python 3（如果没装过请参考网上教程）
 
 (3) 安装 esptool
 
@@ -79,21 +83,27 @@ Hash of data verified.
 Hard resetting via RTS pin...
 ```
 
-这样说明刷机就成功了。
+这样说明刷机就成功了。拔掉 USB 线，后面就不需要用到电脑了。
 
 # 初次使用
 
-(1) 刷机完拔掉 USB 线，装上电池，打开电源开机。（或者按 Reset 键也可以开机）
+(1) 装上电池，打开电源开机。（或者按 Reset 键也可以开机）
+
+<img src="images/main_screen.png" alt="Main Screen" width="300">
 
 (2) 看到主界面，拿出 BLE 蓝牙键盘，开启配对模式（按住 FN 键，再按住蓝色 BT 键，等待 3 秒开始配对）。只在初次使用时需要配对。
 
 (3) 主界面右上角会出现蓝色圆点，说明蓝牙连接成功。
 
-(4) 按 F12 键打开 WiFi 设置，等待扫描网络，选择你的 WiFi 并输入连接密码，回车确认。
+(4) 按蓝牙键盘上的 F12 键打开 WiFi 设置，等待扫描网络，选择你的 WiFi 并输入连接密码，回车确认。
+
+<img src="images/wifi_settings.png" alt="WiFi Settings" width="300">
 
 (5) 这时会回到主界面，稍作等待，主界面右上角出现绿色小圆点，说明 WiFi 连接成功。
 
-(6) 现在就可以输入单词进行查询了。
+(6) 现在就可以用蓝牙键盘输入单词进行查询了。
+
+<img src="images/lookup.png" alt="Lookup" width="300">
 
 # 关机
 
@@ -105,9 +115,13 @@ Hard resetting via RTS pin...
 
 (2) 现在就可以输入单词查询了。
 
-(3) 单词解释出来后可以按 F2 听单词发音，F3 听语音解释，F4 听例句。
+(3) 单词解释出来后可以按 F2 听单词发音，F3 听语音解释，F4 听例句。触摸屏或蓝牙键盘向下方向键可以让屏幕向下滚动。
 
 (4) 查询单词和听音频需要连接服务器，可能网速较慢，请耐心等待。
+
+(5) 长时间静置时蓝牙键盘会进入休眠，蓝色小圆点会变暗。如果要继续输入，按任意键唤醒键盘后，待蓝色小圆点出现后继续输入。
+
+(6) 如网络断开，绿色小圆点会变暗。这时可以按 F12 重新扫描网络连接。
 
 # 问题反馈
 
