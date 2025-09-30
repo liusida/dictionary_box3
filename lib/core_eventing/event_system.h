@@ -135,10 +135,5 @@ private:
 // Ensure a single EventBus<T> instance per type across translation units
 extern template EventBus<KeyEvent>& EventSystem::getEventBus<KeyEvent>();
 extern template EventBus<FunctionKeyEvent>& EventSystem::getEventBus<FunctionKeyEvent>();
-extern template EventBus<DictionaryEvent>& EventSystem::getEventBus<DictionaryEvent>();
-extern template EventBus<AudioEvent>& EventSystem::getEventBus<AudioEvent>();
-extern template EventBus<WiFiEvent>& EventSystem::getEventBus<WiFiEvent>();
-extern template EventBus<AppStateEvent>& EventSystem::getEventBus<AppStateEvent>();
-extern template EventBus<UIEvent>& EventSystem::getEventBus<UIEvent>();
 
 } // namespace dict

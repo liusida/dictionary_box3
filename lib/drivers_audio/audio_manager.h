@@ -36,7 +36,6 @@ public:
     // Utility/getter methods
     bool isCurrentlyPlaying() const; // Check if audio is currently playing
     bool isCurrentlyPaused() const; // Check if audio is paused
-    String getCurrentUrl() const { return currentUrl; } // Get current audio URL/file path
     float getVolume() const { return volume_; } // Get current audio volume
     void setVolume(float volume); // Set audio volume (0.0 to 1.0)
 
@@ -59,7 +58,6 @@ private:
     // State management
     bool initialized_;
     bool isPlaying;
-    String currentUrl;
     float volume_;
     
     // Private methods

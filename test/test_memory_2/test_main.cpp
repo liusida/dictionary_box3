@@ -25,12 +25,6 @@ void test_event_system_memory_usage() {
   // Create and publish various events to measure queue usage
   ESP_LOGI("EventTest", "=== Publishing Events ===");
   
-  // Publish different event types
-  EventPublisher::instance().publish(AudioEvent(AudioEvent::PlaybackStarted, "http://example.com/audio.mp3"));
-  EventPublisher::instance().publish(WiFiEvent(WiFiEvent::Connected, "MyWiFi", IPAddress(192,168,1,100)));
-  EventPublisher::instance().publish(DictionaryEvent(DictionaryEvent::LookupCompleted, "test", "explanation", "sample"));
-  EventPublisher::instance().publish(UIEvent(UIEvent::ScreenChanged, "main", "input", "button"));
-  
   ESP_LOGI("EventTest", "=== AFTER Publishing Events ===");
   printMemoryStatus();
   

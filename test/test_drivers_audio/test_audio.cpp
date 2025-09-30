@@ -66,12 +66,10 @@ void test_audio_playback_state(void) {
     // Test initial playback state
     TEST_ASSERT_FALSE(audio.isCurrentlyPlaying());
     TEST_ASSERT_FALSE(audio.isCurrentlyPaused());
-    TEST_ASSERT_EQUAL_STRING("", audio.getCurrentUrl().c_str());
     
     // Test that we can call these methods multiple times
     TEST_ASSERT_FALSE(audio.isCurrentlyPlaying());
     TEST_ASSERT_FALSE(audio.isCurrentlyPaused());
-    TEST_ASSERT_EQUAL_STRING("", audio.getCurrentUrl().c_str());
     
     // Verify audio is still ready
     TEST_ASSERT_TRUE(audio.isReady());
@@ -132,7 +130,6 @@ void test_audio_mp3_playback(void) {
     // Test playback state after play attempt
     ESP_LOGI("AudioTest", "[MP3 Playback Test] isCurrentlyPlaying: %s", audio.isCurrentlyPlaying() ? "true" : "false");
     ESP_LOGI("AudioTest", "[MP3 Playback Test] isCurrentlyPaused: %s", audio.isCurrentlyPaused() ? "true" : "false");
-    ESP_LOGI("AudioTest", "[MP3 Playback Test] Current URL: %s", audio.getCurrentUrl().c_str());
     
     delay(1000); // wait for the sound (another thread) to play, but only for 1 second.
     
@@ -144,7 +141,6 @@ void test_audio_mp3_playback(void) {
     // Verify state after stop
     TEST_ASSERT_FALSE(audio.isCurrentlyPlaying());
     TEST_ASSERT_FALSE(audio.isCurrentlyPaused());
-    TEST_ASSERT_EQUAL_STRING("", audio.getCurrentUrl().c_str());
     
     // Verify audio is still ready
     TEST_ASSERT_TRUE(audio.isReady());
@@ -200,7 +196,6 @@ void test_audio_wifi_mp3_playback(void) {
         // Verify playback state
         TEST_ASSERT_TRUE(audio.isCurrentlyPlaying());
         TEST_ASSERT_FALSE(audio.isCurrentlyPaused());
-        TEST_ASSERT_EQUAL_STRING(mp3Url, audio.getCurrentUrl().c_str());
         
         ESP_LOGI(TAG, "[WiFi MP3 Playback Test] Playback started successfully");
         
@@ -216,7 +211,6 @@ void test_audio_wifi_mp3_playback(void) {
         // Verify state after stop
         TEST_ASSERT_FALSE(audio.isCurrentlyPlaying());
         TEST_ASSERT_FALSE(audio.isCurrentlyPaused());
-        TEST_ASSERT_EQUAL_STRING("", audio.getCurrentUrl().c_str());
         
         ESP_LOGI(TAG, "[WiFi MP3 Playback Test] Playback stopped successfully");
     } else {

@@ -58,14 +58,10 @@ DictionaryResult DictionaryApi::lookupWord(const String& word) {
     if (!isWordValid(word)) {
         ESP_LOGW(TAG, "Invalid word provided");
 
-        EventPublisher::instance().publish(DictionaryEvent(DictionaryEvent::LookupFailed, word, "", "", "Invalid word"));
         return DictionaryResult();
     }
     
     ESP_LOGI(TAG, "Looking up word: %s", word.c_str());
-    
-    // Publish lookup started event
-    EventPublisher::instance().publish(DictionaryEvent(DictionaryEvent::LookupStarted, word));
     
     // Build JSON body
     JsonDocument* doc = (JsonDocument*)ps_malloc(sizeof(JsonDocument)); //save some SRAM by using ps_malloc
@@ -182,13 +178,6 @@ DictionaryResult DictionaryApi::lookupWord(const String& word) {
     
     bool success = outWord.length() > 0;
     
-    // Publish lookup completed event
-    if (success) {
-        EventPublisher::instance().publish(DictionaryEvent(DictionaryEvent::LookupCompleted, outWord, outExplanation, outSampleSentence));
-    } else {
-        EventPublisher::instance().publish(DictionaryEvent(DictionaryEvent::LookupFailed, word, "", "", "No results found"));
-    }
-    
     return DictionaryResult(outWord, outExplanation, outSampleSentence, success);
 }
 
@@ -218,9 +207,6 @@ AudioUrl DictionaryApi::getAudioUrl(const String& word, const String& audioType)
     
     String url = audioBaseUrl_ + "?word=" + encodedWord + "&type=" + encodedAudioType;
     ESP_LOGD(TAG, "Generated audio URL: %s", url.c_str());
-    
-    // Publish audio requested event
-    EventPublisher::instance().publish(DictionaryEvent(DictionaryEvent::AudioRequested, word, "", "", audioType));
     
     return AudioUrl(url, audioType, true);
 }

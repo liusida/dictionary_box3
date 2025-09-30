@@ -14,7 +14,7 @@ extern StatusOverlay *g_status;
 
 AudioManager::AudioManager()
     : board(AudioDriverES8311, NoPins), out(board), info(32000, 2, 16), player(nullptr), decoder(), urlSource(nullptr), fileSource(nullptr),
-      urlStream(), initialized_(false), isPlaying(false), currentUrl(""), volume_(0.7f) {}
+      urlStream(), initialized_(false), isPlaying(false), volume_(0.7f) {}
 
 AudioManager::~AudioManager() { shutdown(); }
 
@@ -71,22 +71,6 @@ void AudioManager::shutdown() {
         stop();
     }
 
-    // Clean up player
-    if (player) {
-        player->stop();
-        g_status->updateAudioStatus(AudioState::None);
-        player->end();
-        delete player;
-        player = nullptr;
-    }
-
-    // Clean up sources
-    cleanupSources();
-
-    // Don't call out.end() as it conflicts with shared I2C resources
-    // The AudioBoard will be cleaned up when the object is destroyed
-    // out.end();
-
     initialized_ = false;
     ESP_LOGI(TAG, "AudioManager shutdown complete");
 }
@@ -105,14 +89,7 @@ void AudioManager::tick() {
         } else { // timeout detected, clean up
             if (isPlaying) {
                 ESP_LOGI(TAG, "Player timeout detected, stopping and cleaning up");
-                isPlaying = false; // Stop the player before cleaning up
-                player->stop();
-                g_status->updateAudioStatus(AudioState::Ready);
-                player->end();
-                delay(10);
-                cleanupSources();
-                delete player;
-                player = nullptr;
+                stop();
             }
         }
     }
@@ -127,17 +104,10 @@ bool AudioManager::play(const char *url) {
     ESP_LOGI(TAG, "Playing: %s", url);
 
     // Clean up any existing player and sources
-    
-    if (player) {
-        player->stop();
-        decoder.clearNotifyAudioChange();
-        
-        player->end();
-        decoder.end();
-        delete player;
-        player = nullptr;
+    if (isPlaying) {
+        stop();
     }
-    cleanupSources();
+
     decoder.begin();
 
     // Create appropriate source based on URL/file
@@ -175,11 +145,7 @@ bool AudioManager::play(const char *url) {
     // Start playback
     g_status->updateAudioStatus(AudioState::Working, "mp3");
     if (player->begin()) {
-        currentUrl = String(url);
         isPlaying = true;
-
-        // Publish audio event
-        EventPublisher::instance().publish(AudioEvent(AudioEvent::PlaybackStarted, String(url)));
 
         ESP_LOGI(TAG, "Playback started successfully");
         return true;
@@ -195,16 +161,23 @@ bool AudioManager::stop() {
     }
 
     if (isPlaying) {
+        if (!player) {
+            ESP_LOGE(TAG, "Player is null");
+            return false;
+        }
         ESP_LOGI(TAG, "Stopping playback");
 
+        isPlaying = false; // Stop the player before cleaning up
         player->stop();
+        decoder.clearNotifyAudioChange();
         g_status->updateAudioStatus(AudioState::Ready);
-        isPlaying = false;
+        player->end();
+        delay(10);
+        decoder.end();
+        cleanupSources();
+        delete player;
+        player = nullptr;
 
-        // Publish audio event
-        EventPublisher::instance().publish(AudioEvent(AudioEvent::PlaybackStopped, currentUrl));
-
-        currentUrl = "";
         ESP_LOGI(TAG, "Playback stopped");
     }
 

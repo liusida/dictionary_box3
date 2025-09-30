@@ -63,9 +63,6 @@ NetworkControl *g_network = nullptr;
 void setUp(void) {
     // Record memory state before each test
     setUpMemoryMonitoring();
-
-    // Clear event system
-    EventSystem::instance().getEventBus<DictionaryEvent>().clear();
 }
 
 void tearDown(void) {

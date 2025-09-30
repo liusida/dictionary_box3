@@ -117,15 +117,6 @@ void test_eventsystem_singleton_and_bus_instance(void) {
 void test_eventsystem_process_all_events_multiple_types(void) {
     auto &sys = EventSystem::instance();
     bool app_called = false, audio_called = false, wifi_called = false;
-    sys.getEventBus<AppStateEvent>().clear();
-    sys.getEventBus<AudioEvent>().clear();
-    sys.getEventBus<WiFiEvent>().clear();
-    sys.getEventBus<AppStateEvent>().subscribe([&](const AppStateEvent &){ app_called = true; });
-    sys.getEventBus<AudioEvent>().subscribe([&](const AudioEvent &){ audio_called = true; });
-    sys.getEventBus<WiFiEvent>().subscribe([&](const WiFiEvent &){ wifi_called = true; });
-    sys.getEventBus<AppStateEvent>().publish(AppStateEvent(AppStateEvent::SystemReady));
-    sys.getEventBus<AudioEvent>().publish(AudioEvent(AudioEvent::PlaybackStarted));
-    sys.getEventBus<WiFiEvent>().publish(WiFiEvent(WiFiEvent::Connected));
     sys.processAllEvents();
     TEST_ASSERT_TRUE(app_called);
     TEST_ASSERT_TRUE(audio_called);
