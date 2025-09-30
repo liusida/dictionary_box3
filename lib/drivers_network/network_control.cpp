@@ -149,7 +149,7 @@ void NetworkControl::setTryingCredentials(const String &ssid, const String &pass
 
 bool NetworkControl::connectWithTryingCredentials() {
   if (tryingSsid_.length() == 0 || tryingPassword_.length() == 0) {
-    ESP_LOGW(TAG, "No trying credentials found");
+    ESP_LOGD(TAG, "No trying credentials found, ignore");
     return false;
   }
   return connectToNetwork(tryingSsid_, tryingPassword_);
