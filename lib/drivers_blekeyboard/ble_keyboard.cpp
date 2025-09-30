@@ -137,6 +137,12 @@ void BLEKeyboard::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, ui
         uint8_t modifiers = pData[0];
         uint8_t key1 = pData[2];
         if (key1 != 0x00) {
+            // Handle CapsLock key (HID 0x39) - toggle state and swallow event
+            if (key1 == 0x39) { // HID: CapsLock
+                keyboardInstance->capsLockOn_ = !keyboardInstance->capsLockOn_;
+                return; // swallow CapsLock key
+            }
+            
             if (keyboardInstance && keyboardInstance->keyCallback) {
                 char key1_char = keyboardInstance->convertKeyCodeToChar(key1, modifiers);
                 keyboardInstance->keyCallback(key1_char, key1, modifiers);
@@ -205,61 +211,18 @@ bool BLEKeyboard::connectToServer() {
 }
 
 char BLEKeyboard::convertKeyCodeToChar(uint8_t keyCode, uint8_t modifiers) {
-    bool shift = (modifiers & 0x02) != 0;
-    bool caps = (modifiers & 0x02) != 0;
+    const uint8_t kShiftMask = 0x02 | 0x20; // LeftShift | RightShift
+    bool shift = (modifiers & kShiftMask) != 0;
+
+    // Letters A..Z (HID 0x04..0x1D)
+    if (keyCode >= 0x04 && keyCode <= 0x1D) {
+        char base = static_cast<char>('a' + (keyCode - 0x04));
+        bool upper = shift ^ capsLockOn_;
+        return upper ? static_cast<char>(base - ('a' - 'A')) : base;
+    }
+
+    // existing switch for all other keys remains unchanged
     switch (keyCode) {
-    case 0x04:
-        return shift ? 'A' : 'a';
-    case 0x05:
-        return shift ? 'B' : 'b';
-    case 0x06:
-        return shift ? 'C' : 'c';
-    case 0x07:
-        return shift ? 'D' : 'd';
-    case 0x08:
-        return shift ? 'E' : 'e';
-    case 0x09:
-        return shift ? 'F' : 'f';
-    case 0x0A:
-        return shift ? 'G' : 'g';
-    case 0x0B:
-        return shift ? 'H' : 'h';
-    case 0x0C:
-        return shift ? 'I' : 'i';
-    case 0x0D:
-        return shift ? 'J' : 'j';
-    case 0x0E:
-        return shift ? 'K' : 'k';
-    case 0x0F:
-        return shift ? 'L' : 'l';
-    case 0x10:
-        return shift ? 'M' : 'm';
-    case 0x11:
-        return shift ? 'N' : 'n';
-    case 0x12:
-        return shift ? 'O' : 'o';
-    case 0x13:
-        return shift ? 'P' : 'p';
-    case 0x14:
-        return shift ? 'Q' : 'q';
-    case 0x15:
-        return shift ? 'R' : 'r';
-    case 0x16:
-        return shift ? 'S' : 's';
-    case 0x17:
-        return shift ? 'T' : 't';
-    case 0x18:
-        return shift ? 'U' : 'u';
-    case 0x19:
-        return shift ? 'V' : 'v';
-    case 0x1A:
-        return shift ? 'W' : 'w';
-    case 0x1B:
-        return shift ? 'X' : 'x';
-    case 0x1C:
-        return shift ? 'Y' : 'y';
-    case 0x1D:
-        return shift ? 'Z' : 'z';
     case 0x1E:
         return shift ? '!' : '1';
     case 0x1F:

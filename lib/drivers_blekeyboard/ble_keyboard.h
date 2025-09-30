@@ -66,6 +66,7 @@ class BLEKeyboard {
     ScanCallbacks *scanCallbacks;
 
     KeyCallback keyCallback;
+    bool capsLockOn_ = false; // track CapsLock state
 
     // Private methods
     static void notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify);
