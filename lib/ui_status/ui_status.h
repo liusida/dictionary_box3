@@ -74,9 +74,6 @@ private:
     WiFiState wifiState_;
     bool bleConnected_;
     AudioState audioState_;
-    String wifiSSID_;
-    String bleDevice_;
-    String audioTrack_;
     
     // Indicator colors
     lv_color_t wifiColor_;

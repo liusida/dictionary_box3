@@ -169,7 +169,6 @@ bool StatusOverlay::isVisible() const {
 
 void StatusOverlay::updateWiFiStatus(WiFiState state, const String& ssid) {
     wifiState_ = state;
-    wifiSSID_ = ssid;
     
     if (initialized_) {
         updateWiFiIndicator();
@@ -181,7 +180,6 @@ void StatusOverlay::updateWiFiStatus(WiFiState state, const String& ssid) {
 
 void StatusOverlay::updateBLEStatus(bool connected, const String& device) {
     bleConnected_ = connected;
-    bleDevice_ = device;
     
     if (initialized_) {
         updateBLEIndicator();
@@ -191,7 +189,6 @@ void StatusOverlay::updateBLEStatus(bool connected, const String& device) {
 
 void StatusOverlay::updateAudioStatus(AudioState state, const String& track) {
     audioState_ = state;
-    audioTrack_ = track;
     
     if (initialized_) {
         updateAudioIndicator();
@@ -306,11 +303,6 @@ void StatusOverlay::createIndicators() {
     lv_obj_set_style_bg_opa(audioIndicator_, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     ESP_LOGI(TAG, "Audio indicator created");
 
-    // Add click callbacks
-    lv_obj_add_event_cb(wifiIndicator_, indicatorClickCallback, LV_EVENT_CLICKED, this);
-    lv_obj_add_event_cb(bleIndicator_, indicatorClickCallback, LV_EVENT_CLICKED, this);
-    lv_obj_add_event_cb(audioIndicator_, indicatorClickCallback, LV_EVENT_CLICKED, this);
-    
     ESP_LOGI(TAG, "All indicators created successfully");
 }
 
@@ -386,22 +378,6 @@ void StatusOverlay::applyIndicatorStyle(lv_obj_t* indicator, bool active, lv_col
     delay(10);
         
     ESP_LOGI(TAG, "Applied %s color to indicator", active ? "active" : "grey");
-}
-
-void StatusOverlay::indicatorClickCallback(lv_event_t* e) {
-    StatusOverlay* overlay = static_cast<StatusOverlay*>(lv_event_get_user_data(e));
-    lv_obj_t* indicator = static_cast<lv_obj_t*>(lv_event_get_target(e));
-    
-    if (!overlay) return;
-    
-    // Determine which indicator was clicked
-    if (indicator == overlay->wifiIndicator_) {
-        ESP_LOGI(TAG, "WiFi indicator clicked - SSID: %s", overlay->wifiSSID_.c_str());
-    } else if (indicator == overlay->bleIndicator_) {
-        ESP_LOGI(TAG, "BLE indicator clicked - Device: %s", overlay->bleDevice_.c_str());
-    } else if (indicator == overlay->audioIndicator_) {
-        ESP_LOGI(TAG, "Audio indicator clicked - Track: %s", overlay->audioTrack_.c_str());
-    }
 }
 
 } // namespace dict
