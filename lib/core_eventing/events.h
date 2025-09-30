@@ -11,20 +11,6 @@ struct KeyEvent {
     bool valid;
 };
 
-// Application state events
-struct AppStateEvent {
-    enum Type {
-        EnteringSplash,
-        EnteringMain,
-        SystemReady,
-        SystemNotReady
-    };
-    Type type;
-    unsigned long timestamp;
-    
-    AppStateEvent(Type t) : type(t), timestamp(millis()) {}
-};
-
 // Audio events
 struct AudioEvent {
     enum Type {

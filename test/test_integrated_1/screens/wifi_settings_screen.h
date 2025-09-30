@@ -11,6 +11,7 @@ class WiFiSettingsScreen {
 
     void initialize();
     void shutdown();
+    void tick();
 
     void scan();
     void onSelect(const String& ssid);
@@ -22,6 +23,10 @@ class WiFiSettingsScreen {
     static void scanTask(void *parameter);
     bool scanning_;
     TaskHandle_t scanTaskHandle_;
+    bool setTxtStatus_;
+    String txtStatus_;
+    bool setOptions_;
+    String options_;
 };
 
 } // namespace dict

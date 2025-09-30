@@ -75,6 +75,7 @@ static void handleFunctionKeyEvent(const FunctionKeyEvent& ev) {
         case FunctionKeyEvent::PrintMemoryStatus:
             ESP_LOGI(TAG, "F1 pressed - printing memory status");
             printMemoryStatus(); // You'd need to implement this
+            printAllStatus();
             break;
         case FunctionKeyEvent::VolumeDown:
             ESP_LOGI(TAG, "F10 pressed - volume down");

@@ -1,34 +1,27 @@
 #pragma once
-#include "ui/ui.h"
+#include <Arduino.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
-// Forward declarations for drivers
-class NetworkControl;
+namespace dict {
+class MainScreen;
 
-/**
- * @brief Simplified WiFi settings screen manager
- * 
- * Handles WiFi settings screen logic and user interactions.
- * Simplified version of the original WiFi settings controller.
- */
 class WiFiSettingsScreen {
-public:
-    WiFiSettingsScreen(NetworkControl& wifiDriver);
-    ~WiFiSettingsScreen();
-    
-    bool initialize();
+  public:
+
+    void initialize();
     void shutdown();
-    void tick();
+
+    void scan();
+    void onSelect(const String& ssid);
+    void onSubmit();
+    void setParent(MainScreen* parent);
     
-    void showWiFiSettingsScreen();
-    
-private:
-    // Driver (following simplified architecture)
-    NetworkControl& wifiDriver_;
-    
-    bool initialized_;
-    
-    /**
-     * @brief Update status icons based on driver state (following simplified architecture)
-     */
-    void updateStatusIcons();
+  private:
+    MainScreen* parent_;
+    static void scanTask(void *parameter);
+    bool scanning_;
+    TaskHandle_t scanTaskHandle_;
 };
+
+} // namespace dict

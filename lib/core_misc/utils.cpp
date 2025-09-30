@@ -1,18 +1,21 @@
 #include "utils.h"
 #include "log.h"
+#include "network_control.h"
 
 namespace dict {
+
+extern NetworkControl *g_network;
 
 void printMemoryStatus() {
   // Internal RAM (SRAM) information
   uint32_t freeHeap = ESP.getFreeHeap();
   uint32_t totalHeap = ESP.getHeapSize();
   uint32_t minFreeHeap = ESP.getMinFreeHeap();
-  
+
   // SPIRAM (PSRAM) information
   uint32_t freePsram = ESP.getFreePsram();
   uint32_t totalPsram = ESP.getPsramSize();
-  
+
   ESP_LOGI("Utils", "=== Memory Status ===");
   ESP_LOGI("Utils", "Internal RAM (SRAM):");
   ESP_LOGI("Utils", "  Free: %u bytes (%.2f KB)", freeHeap, freeHeap / 1024.0);
@@ -20,7 +23,7 @@ void printMemoryStatus() {
   ESP_LOGI("Utils", "  Min Free: %u bytes (%.2f KB)", minFreeHeap, minFreeHeap / 1024.0);
   ESP_LOGI("Utils", "  Used: %u bytes (%.2f KB)", totalHeap - freeHeap, (totalHeap - freeHeap) / 1024.0);
   ESP_LOGI("Utils", "  Usage: %.1f%%", ((float)(totalHeap - freeHeap) / totalHeap) * 100);
-  
+
   if (totalPsram > 0) {
     ESP_LOGI("Utils", "SPIRAM (PSRAM):");
     ESP_LOGI("Utils", "  Free: %u bytes (%.2f KB)", freePsram, freePsram / 1024.0);
@@ -30,7 +33,7 @@ void printMemoryStatus() {
   } else {
     ESP_LOGW("Utils", "SPIRAM (PSRAM): Not available");
   }
-  
+
   // Additional system info
   ESP_LOGI("Utils", "Chip Model: %s", ESP.getChipModel());
   ESP_LOGI("Utils", "Chip Revision: %d", ESP.getChipRevision());
@@ -39,6 +42,12 @@ void printMemoryStatus() {
   ESP_LOGI("Utils", "===================");
 }
 
+void printAllStatus() {
+  ESP_LOGI("Utils", "=== WiFi Status ===");
+  ESP_LOGI("Utils", "Connected: %d", g_network->isConnected());
+  ESP_LOGI("Utils", "Connecting: %d", g_network->isConnecting());
+  ESP_LOGI("Utils", "Scanning: %d", g_network->isScanning());
+  ESP_LOGI("Utils", "===================");
+}
+
 } // namespace dict
-
-

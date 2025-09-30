@@ -13,6 +13,8 @@ namespace dict {
  */
 void printMemoryStatus();
 
+void printAllStatus();
+
 // Display reset utility moved to drivers_display/display_utils.h
 
 } // namespace dict

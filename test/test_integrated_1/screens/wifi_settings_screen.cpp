@@ -13,6 +13,12 @@ void WiFiSettingsScreen::initialize() {
   g_network->setIsOnSettingScreen(true);
   scanning_ = false;
   scanTaskHandle_ = nullptr;
+  setOptions_ = false;
+  options_ = "";
+  setTxtStatus_ = false;
+  txtStatus_ = "";
+  setOptions_ = false;
+  options_ = "";
   ui_WIFI_Settings_screen_init();
   lv_disp_load_scr(ui_WIFI_Settings);
   lv_group_focus_obj(ui_InputPassword);
@@ -28,6 +34,7 @@ void WiFiSettingsScreen::shutdown() {
     scanning_ = false;
     if (scanTaskHandle_ != nullptr) {
       vTaskDelete(scanTaskHandle_);
+      g_network->setScanning(false); // when force shutdown, set scanning flag to false
       scanTaskHandle_ = nullptr;
     }
   }
@@ -39,12 +46,14 @@ void WiFiSettingsScreen::scanTask(void *parameter) {
   WiFiSettingsScreen *screen = static_cast<WiFiSettingsScreen *>(parameter);
 
   ESP_LOGI(TAG, "Scan task started");
-
+  screen->txtStatus_ = "Preparing to scan...";
+  screen->setTxtStatus_ = true;
   while (g_network->isConnecting() || g_network->isScanning()) { // wait until connecting or scanning is finished
-    ESP_LOGI(TAG, "Waiting for connecting or scanning to finish");
+    ESP_LOGI(TAG, "Waiting for connecting or scanning to finish. connecting: %d, scanning: %d", g_network->isConnecting(), g_network->isScanning());
     delay(500);
   }
-
+  screen->txtStatus_ = "Scanning WiFi for 5 seconds...";
+  screen->setTxtStatus_ = true;
   // Perform the actual scan
   auto ssids = g_network->scanNetworks();
 
@@ -59,11 +68,10 @@ void WiFiSettingsScreen::scanTask(void *parameter) {
     options += ssid + "\n";
   }
   options.trim();
-  // Set the wifi ssid list
-  lv_dropdown_set_options(ui_InputSSIDs, options.c_str());
-  // Set dropdown background color to white
-  lv_obj_set_style_bg_color(ui_InputSSIDs, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_label_set_text(ui_TxtStatus, "");
+  screen->txtStatus_ = "";
+  screen->setTxtStatus_ = true;
+  screen->options_ = options;
+  screen->setOptions_ = true;
 
   // Clean up
   screen->scanning_ = false;
@@ -84,7 +92,7 @@ void WiFiSettingsScreen::scan() {
   }
   scanning_ = true;
   if (g_network->isConnected()) {
-    lv_label_set_text(ui_TxtStatus, "Scanning WiFi...");
+    lv_label_set_text(ui_TxtStatus, "Scanning WiFi for 5 seconds...");
     String options = g_network->getCurrentSsid();
     // Set dropdown background color to gray
     lv_obj_set_style_bg_color(ui_InputSSIDs, lv_color_hex(0xC3C3C3), LV_PART_MAIN | LV_STATE_DEFAULT);    
@@ -95,7 +103,7 @@ void WiFiSettingsScreen::scan() {
   } else {
     lv_dropdown_set_options(ui_InputSSIDs, "");
     lv_obj_set_style_bg_color(ui_InputSSIDs, lv_color_hex(0xC3C3C3), LV_PART_MAIN | LV_STATE_DEFAULT);    
-    lv_label_set_text(ui_TxtStatus, "Scanning WiFi...");
+    lv_label_set_text(ui_TxtStatus, "Scanning WiFi for 5 seconds...");
   }
 
   // Create task for scanning
@@ -130,5 +138,17 @@ void WiFiSettingsScreen::onSubmit() {
 }
 
 void WiFiSettingsScreen::setParent(MainScreen *parent) { parent_ = parent; }
+
+void WiFiSettingsScreen::tick() {
+  if (setTxtStatus_) {
+    lv_label_set_text(ui_TxtStatus, txtStatus_.c_str());
+    setTxtStatus_ = false;
+  }
+  if (setOptions_) {
+    lv_dropdown_set_options(ui_InputSSIDs, options_.c_str());
+    lv_obj_set_style_bg_color(ui_InputSSIDs, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    setOptions_ = false;
+  }
+}
 
 } // namespace dict

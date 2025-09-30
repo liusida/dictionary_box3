@@ -48,6 +48,7 @@ public:
     // Network scanning methods
     std::vector<String> scanNetworks(); // Scan for available WiFi networks
     bool isScanning() const { return scanning_; }
+    void setScanning(bool scanning) { scanning_ = scanning; }
 
     // Connection callbacks
     using ConnectedCallback = std::function<void(const IPAddress&)>;

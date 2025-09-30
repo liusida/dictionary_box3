@@ -3,11 +3,13 @@
 #include "drivers_display/lvgl_helper.h"
 #include "ui.h"
 #include "ui_status/ui_status.h"
+#include "network_control.h"
 
 namespace dict {
 
 static const char *TAG = "MainScreen";
 
+extern NetworkControl *g_network;
 extern AudioManager *g_audio;
 extern StatusOverlay *g_status;
 
@@ -40,6 +42,9 @@ void MainScreen::shutdown() {
 void MainScreen::tick() {
   if (!initialized_) {
     return;
+  }
+  if (isWifiSettings_) {
+    wifiSettingsScreen_.tick();
   }
 }
 
@@ -128,7 +133,7 @@ void MainScreen::onSubmit() {
   lv_obj_remove_flag(ui_TxtWord, LV_OBJ_FLAG_HIDDEN);
   g_status->updateWiFiStatus(WiFiState::Working);
   currentResult_ = dictionaryApi_.lookupWord(currentWord_);
-  g_status->updateWiFiStatus(WiFiState::Ready);
+  g_status->updateWiFiStatus(g_network->isConnected() ? WiFiState::Ready : WiFiState::None);
   if (currentResult_.success) {
     g_audio->stop();
     currentWord_ = currentResult_.word;

@@ -165,6 +165,7 @@ std::vector<String> NetworkControl::scanNetworks() {
     return {};
   }
   scanning_ = true;
+  ESP_LOGI(TAG, "Setting g_network->scanning to true");
 
   std::vector<String> networks;
 
@@ -186,6 +187,7 @@ std::vector<String> NetworkControl::scanNetworks() {
   // Clear the scan results
   WiFi.scanDelete();
   scanning_ = false;
+  ESP_LOGI(TAG, "Setting g_network->scanning to false");
   return networks;
 }
 
