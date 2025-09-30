@@ -43,6 +43,9 @@ void MainScreen::tick() {
   if (!initialized_) {
     return;
   }
+  if (isWifiSettings_) {
+    wifiSettingsScreen_.tick();
+  }
 }
 
 bool MainScreen::isReady() const { return initialized_; }
