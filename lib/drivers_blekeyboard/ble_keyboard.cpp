@@ -13,7 +13,6 @@ public:
   void onDisconnect(NimBLEClient *pClient, int reason) override {
     ESP_LOGW(TAG, "%s Disconnected, reason = %d - Starting scan", pClient->getPeerAddress().toString().c_str(), reason);
     keyboard->advDeviceAddress = "";
-    keyboard->toKeyboardSettings = true;
     keyboard->pScan->start(keyboard->scanTimeMs, false, true);
   }
 };
@@ -36,10 +35,8 @@ public:
     bool found = false;
     if (deviceName.length() > 0) {
       ESP_LOGD(TAG, "Found Device: %s (%s)", deviceName.c_str(), deviceAddr.c_str());
-      keyboard->discoveredDevices.push_back(std::make_pair(deviceName, deviceAddr));
     } else {
       ESP_LOGD(TAG, "Found Device: %s", deviceAddr.c_str());
-      keyboard->discoveredDevices.push_back(std::make_pair(deviceAddr, deviceAddr));
     }
     if (keyboard->preferences.getString("addr").equals(deviceAddr)) {
       found = true;
@@ -57,7 +54,6 @@ public:
   }
   void onScanEnd(const NimBLEScanResults &results, int reason) override {
     ESP_LOGI(TAG, "Scan Ended, reason: %d, device count: %d; Restarting scan", reason, results.getCount());
-    keyboard->toKeyboardSettings = true;
     keyboard->scanning_ = false;
     keyboard->scanEndTime_ = millis();
   }
@@ -67,9 +63,10 @@ static BLEKeyboard *keyboardInstance = nullptr;
 
 BLEKeyboard::BLEKeyboard()
     : initialized_(false), scanning_(false), scanStartTime_(0), scanEndTime_(0), advDeviceAddress(""), doConnect(false), powerLevel(-15),
-      scanTimeMs(500), scanRestartIntervalMs(0), clientCallbacks(nullptr), scanCallbacks(nullptr), keyCallback(nullptr), toKeyboardSettings(false) {
+      scanTimeMs(500), keyCallback(nullptr) {
   clientCallbacks = new ClientCallbacks(this);
   scanCallbacks = new ScanCallbacks(this);
+  keyProcessor_ = new KeyProcessor();
   keyboardInstance = this;
 }
 
@@ -82,7 +79,9 @@ BLEKeyboard::~BLEKeyboard() {
 }
 
 bool BLEKeyboard::initialize() {
-  begin(0);
+  begin();
+  keyProcessor_->initialize();
+  setKeyCallback([&](char ch, uint8_t keyCode, uint8_t modifiers) { keyProcessor_->sendKeyToLVGL(ch, keyCode, modifiers); });
   initialized_ = true;
   return true;
 }
@@ -104,12 +103,14 @@ void BLEKeyboard::tick() {
       ESP_LOGW(TAG, "Failed to connect, no starting scan");
     }
   }
+  if (keyProcessor_ && keyProcessor_->isReady()) {
+    keyProcessor_->tick();
+  }
 }
 
 bool BLEKeyboard::isReady() const { return initialized_; }
 
-void BLEKeyboard::begin(uint32_t scanRestartIntervalMs) {
-  this->scanRestartIntervalMs = scanRestartIntervalMs;
+void BLEKeyboard::begin() {
   preferences.end();
   if (!preferences.begin("ble_config", false)) {
     ESP_LOGE(TAG, "Failed to open preferences");
@@ -298,7 +299,6 @@ bool BLEKeyboard::isConnected() const {
 
 void BLEKeyboard::startScan() {
   ESP_LOGI(TAG, "Starting BLE scan...");
-  discoveredDevices.clear();
   if (pScan) {
     scanning_ = true;
     scanStartTime_ = millis();
@@ -307,30 +307,6 @@ void BLEKeyboard::startScan() {
   } else {
     ESP_LOGE(TAG, "Scan object not initialized");
   }
-}
-
-std::vector<String> BLEKeyboard::getDiscoveredDevices() {
-  std::vector<String> deviceNames;
-  for (const auto &device : discoveredDevices) {
-    deviceNames.push_back(device.first);
-  }
-  return deviceNames;
-}
-
-bool BLEKeyboard::connectToDevice(const String &deviceName) {
-  // TODO: This function is only called in KeyboardSettingsScreen. Might be able to remove it.
-  ESP_LOGI(TAG, "Attempting to connect to device: %s", deviceName.c_str());
-  for (const auto &device : discoveredDevices) {
-    if (device.first == deviceName) {
-      ESP_LOGI(TAG, "Found device %s with address %s", device.first.c_str(), device.second.c_str());
-      preferences.putString("addr", device.second);
-      doConnect = true;
-      advDeviceAddress = device.second;
-      return true;
-    }
-  }
-  ESP_LOGW(TAG, "Device %s not found in discovered devices", deviceName.c_str());
-  return false;
 }
 
 } // namespace dict
