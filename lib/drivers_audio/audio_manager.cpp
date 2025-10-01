@@ -13,7 +13,14 @@ extern StatusOverlay *g_status;
 
 AudioManager::AudioManager()
     : board(AudioDriverES8311, NoPins), out(board), info(32000, 2, 16), player(nullptr), decoder(), urlSource(nullptr), fileSource(nullptr),
-      urlStream(), initialized_(false), isPlaying(false), volume_(0.7f) {}
+      urlStream(), initialized_(false), isPlaying(false), volume_(0.7f) {
+    // Initialize preferences for volume persistence
+    if (!preferences.begin("audio_config", false)) {
+        ESP_LOGE(TAG, "Failed to open audio preferences");
+    } else {
+        ESP_LOGI(TAG, "Audio preferences initialized successfully");
+    }
+}
 
 AudioManager::~AudioManager() { shutdown(); }
 
@@ -51,7 +58,12 @@ bool AudioManager::initialize() {
         ESP_LOGE(TAG, "Failed to initialize audio output stream (I2S & codec)");
         return false;
     }
-    out.setVolume(0.7f);
+    
+    // Load saved volume from preferences, default to 0.7 if not found
+    float savedVolume = preferences.getFloat("volume", 0.7f);
+    volume_ = savedVolume;
+    out.setVolume(volume_);
+    ESP_LOGI(TAG, "Volume loaded from preferences: %.2f", volume_);
 
     initialized_ = true;
     ESP_LOGI(TAG, "AudioManager initialized successfully");
@@ -190,7 +202,7 @@ bool AudioManager::isCurrentlyPaused() const {
 }
 
 void AudioManager::setVolume(float volume) {
-    if (!initialized_ || !player) {
+    if (!initialized_) {
         return;
     }
 
@@ -200,7 +212,11 @@ void AudioManager::setVolume(float volume) {
         volume = 1.0f;
     volume_ = volume;
     out.setVolume(volume_);
-    ESP_LOGI(TAG, "Volume set to: %.2f", volume_);
+    
+    // Save volume to preferences for persistence across reboots
+    preferences.putFloat("volume", volume_);
+    
+    ESP_LOGI(TAG, "Volume set to: %.2f (saved to preferences)", volume_);
 }
 
 bool AudioManager::isUrl(const char *path) const { return strstr(path, "http://") == path || strstr(path, "https://") == path; }

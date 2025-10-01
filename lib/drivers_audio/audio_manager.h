@@ -5,6 +5,7 @@
 #include "audio_source_dynamic_url_no_auto_next.h"
 #include <WiFi.h>
 #include "LittleFS.h"
+#include "Preferences.h"
 #define HELIX_LOG_LEVEL LogLevelHelix::Warning
 #include "AudioTools.h"
 #include "AudioTools/AudioLibs/AudioBoardStream.h"
@@ -58,6 +59,7 @@ private:
     bool initialized_;
     bool isPlaying;
     float volume_;
+    Preferences preferences;
     
     // Private methods
     bool isUrl(const char* path) const; // Check if path is a URL
