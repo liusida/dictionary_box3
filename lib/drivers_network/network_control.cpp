@@ -18,7 +18,8 @@ extern const uint8_t certs_x509_crt_bundle_end[] asm("_binary_certs_x509_crt_bun
 
 NetworkControl::NetworkControl()
     : initialized_(false), connecting_(false), connectStartTime_(0), connectEndTime_(0), wifiConnected(false), lastConnectionCheck(0),
-      lastDisconnectionTime(0), wasConnected(false), currentSsid_(""), currentPassword_(""), isOnSettingScreen_(false), scanning_(false), tryingSsid_(""), tryingPassword_("") {}
+      lastDisconnectionTime(0), wasConnected(false), currentSsid_(""), currentPassword_(""), isOnSettingScreen_(false), scanning_(false),
+      tryingSsid_(""), tryingPassword_("") {}
 
 NetworkControl::~NetworkControl() {}
 

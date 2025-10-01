@@ -7,5 +7,3 @@ namespace dict {
 void manualResetDisplay();
 
 } // namespace dict
-
-

@@ -1,9 +1,9 @@
 #include "main_screen.h"
 #include "drivers_audio/audio_manager.h"
 #include "drivers_display/lvgl_helper.h"
+#include "network_control.h"
 #include "ui.h"
 #include "ui_status/ui_status.h"
-#include "network_control.h"
 
 namespace dict {
 

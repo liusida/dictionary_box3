@@ -95,14 +95,14 @@ void WiFiSettingsScreen::scan() {
     lv_label_set_text(ui_TxtStatus, "Scanning WiFi for 5 seconds...");
     String options = g_network->getCurrentSsid();
     // Set dropdown background color to gray
-    lv_obj_set_style_bg_color(ui_InputSSIDs, lv_color_hex(0xC3C3C3), LV_PART_MAIN | LV_STATE_DEFAULT);    
+    lv_obj_set_style_bg_color(ui_InputSSIDs, lv_color_hex(0xC3C3C3), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_dropdown_set_options(ui_InputSSIDs, options.c_str());
     lv_textarea_set_password_mode(ui_InputPassword, false);
     lv_textarea_set_text(ui_InputPassword, g_network->getCurrentPassword().c_str());
     lv_textarea_set_password_mode(ui_InputPassword, true);
   } else {
     lv_dropdown_set_options(ui_InputSSIDs, "");
-    lv_obj_set_style_bg_color(ui_InputSSIDs, lv_color_hex(0xC3C3C3), LV_PART_MAIN | LV_STATE_DEFAULT);    
+    lv_obj_set_style_bg_color(ui_InputSSIDs, lv_color_hex(0xC3C3C3), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text(ui_TxtStatus, "Scanning WiFi for 5 seconds...");
   }
 

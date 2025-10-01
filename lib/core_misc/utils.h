@@ -5,7 +5,7 @@ namespace dict {
 
 /**
  * @brief Print detailed memory status information to Serial
- * 
+ *
  * This function displays:
  * - Internal RAM (SRAM): free, total, minimum free, used memory, and usage percentage
  * - SPIRAM (PSRAM): free, total, used memory, and usage percentage (if available)
@@ -18,5 +18,3 @@ void printAllStatus();
 // Display reset utility moved to drivers_display/display_utils.h
 
 } // namespace dict
-
-
