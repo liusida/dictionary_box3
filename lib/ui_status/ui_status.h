@@ -16,7 +16,6 @@ public:
   // Core lifecycle methods
   bool initialize();    // Initialize status overlay and create UI elements
   void shutdown();      // Clean shutdown and free resources
-  void tick();          // Update status indicators and handle animations
   bool isReady() const; // Check if status overlay is ready for use
 
   // Main functionality methods

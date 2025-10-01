@@ -2,6 +2,7 @@
 #include "api_dictionary/dictionary_api.h"
 #include "core_eventing/events.h"
 #include "wifi_settings_screen.h"
+#include "ui.h"
 
 namespace dict {
 
@@ -31,6 +32,8 @@ public:
   void onDownArrow();
   void onUpArrow();
   void onEscape();
+
+  lv_obj_t *uiObject() const { return ui_Main; }
 
 private:
   // Private constructor/destructor for singleton

@@ -2,7 +2,7 @@
 #include "lvgl.h"
 #include "main_screen.h"
 #include "network_control.h"
-#include "ui.h"
+
 namespace dict {
 
 static const char *TAG = "WiFiSettingsScreen";
@@ -26,7 +26,7 @@ void WiFiSettingsScreen::initialize(MainScreen *parent) {
   setOptions_ = false;
   options_ = "";
   ui_WIFI_Settings_screen_init();
-  lv_disp_load_scr(ui_WIFI_Settings);
+  lv_disp_load_scr(uiObject());
   lv_group_focus_obj(ui_InputPassword);
   if (ui_BtnConnect != NULL) {
     lv_obj_add_event_cb(

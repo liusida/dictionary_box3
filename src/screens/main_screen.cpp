@@ -2,7 +2,6 @@
 #include "drivers_audio/audio_manager.h"
 #include "drivers_display/lvgl_helper.h"
 #include "network_control.h"
-#include "ui.h"
 #include "ui_status/ui_status.h"
 
 namespace dict {
@@ -60,7 +59,7 @@ void MainScreen::show() {
   isWifiSettings_ = false;
 
   // Initialize and show the main UI screen
-  lv_disp_load_scr(ui_Main);
+  lv_disp_load_scr(uiObject());
   // Set up UI elements first
   addObjectToDefaultGroup(ui_InputWord);
   lv_textarea_set_text(ui_InputWord, "");
@@ -234,7 +233,7 @@ void MainScreen::onBackFromWifiSettings() {
   ESP_LOGI(TAG, "Back from wifi settings");
   if (isWifiSettings_) {
     WiFiSettingsScreen::instance().shutdown();
-    lv_disp_load_scr(ui_Main); // Switch back to main screen
+    lv_disp_load_scr(uiObject()); // Switch back to main screen
     lv_group_focus_obj(ui_InputWord);
     isWifiSettings_ = false;
     isScreenActive_ = true;

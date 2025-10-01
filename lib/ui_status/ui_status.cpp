@@ -84,12 +84,6 @@ void StatusOverlay::shutdown() {
   ESP_LOGI(TAG, "Status overlay shutdown complete");
 }
 
-void StatusOverlay::tick() {
-  if (!initialized_ || !visible_) {
-    return;
-  }
-}
-
 bool StatusOverlay::isReady() const { return initialized_; }
 
 void StatusOverlay::attachToScreen(lv_obj_t *screen) {

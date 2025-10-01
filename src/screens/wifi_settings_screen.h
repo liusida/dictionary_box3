@@ -2,6 +2,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <Arduino.h>
+#include "ui.h"
 
 namespace dict {
 class MainScreen;
@@ -20,6 +21,8 @@ public:
   void scan();
   void onSelect(const String &ssid);
   void onSubmit();
+
+  lv_obj_t *uiObject() const { return ui_WIFI_Settings; }
 
 private:
   WiFiSettingsScreen();

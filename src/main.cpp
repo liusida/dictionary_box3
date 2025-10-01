@@ -57,7 +57,7 @@ void setup() {
   TEST_ASSERT_TRUE_MESSAGE(StatusOverlay::instance().initialize(), "Status overlay initialize failed");
   TEST_ASSERT_TRUE(StatusOverlay::instance().isReady());
 
-  StatusOverlay::instance().attachToScreen(ui_Main);
+  StatusOverlay::instance().attachToScreen(MainScreen::instance().uiObject());
   StatusOverlay::instance().show();
   StatusOverlay::instance().setPosition(LV_ALIGN_TOP_RIGHT, -10, 10);
   ESP_LOGI("INTEGRATED_TEST", "Status overlay initialized and attached");
@@ -93,11 +93,6 @@ void loop() {
   // Process display updates
   if (DisplayManager::instance().isReady()) {
     DisplayManager::instance().tick();
-  }
-
-  // Process status overlay updates
-  if (StatusOverlay::instance().isReady()) {
-    StatusOverlay::instance().tick();
   }
 
   // Process BLE keyboard
