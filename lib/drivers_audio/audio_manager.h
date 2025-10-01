@@ -31,8 +31,6 @@ public:
   bool stop();                // Stop current audio playback
 
   // Utility/getter methods
-  bool isCurrentlyPlaying() const;            // Check if audio is currently playing
-  bool isCurrentlyPaused() const;             // Check if audio is paused
   float getVolume() const { return volume_; } // Get current audio volume
   void setVolume(float volume);               // Set audio volume (0.0 to 1.0)
 

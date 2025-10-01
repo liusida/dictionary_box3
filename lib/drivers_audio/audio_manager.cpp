@@ -162,15 +162,14 @@ bool AudioManager::play(const char *url) {
 }
 
 bool AudioManager::stop() {
-  if (!initialized_ || !player) {
+  if (!initialized_) {
     return false;
+  }
+  if (!player) {
+    return true;
   }
 
   if (isPlaying) {
-    if (!player) {
-      ESP_LOGE(TAG, "Player is null");
-      return false;
-    }
     ESP_LOGI(TAG, "Stopping playback");
 
     isPlaying = false; // Stop the player before cleaning up
@@ -188,12 +187,6 @@ bool AudioManager::stop() {
   }
 
   return true;
-}
-
-bool AudioManager::isCurrentlyPlaying() const { return isPlaying && player && player->isActive(); }
-
-bool AudioManager::isCurrentlyPaused() const {
-  return false; // AudioPlayer doesn't have pause functionality in this implementation
 }
 
 void AudioManager::setVolume(float volume) {
@@ -214,7 +207,12 @@ void AudioManager::setVolume(float volume) {
   ESP_LOGI(TAG, "Volume set to: %.2f (saved to preferences)", volume_);
 }
 
-bool AudioManager::isUrl(const char *path) const { return strstr(path, "http://") == path || strstr(path, "https://") == path; }
+bool AudioManager::isUrl(const char *path) const { 
+  if (path == nullptr) {
+      return false;
+  }
+  return strstr(path, "http://") == path || strstr(path, "https://") == path; 
+}
 
 void AudioManager::createUrlSource(const char *url) {
   ESP_LOGI(TAG, "Creating URL source for: %s", url);

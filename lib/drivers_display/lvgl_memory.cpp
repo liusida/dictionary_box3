@@ -102,6 +102,12 @@ void lv_mem_init(void) {
   ESP_LOGI(TAG, "LVGL memory system initialized with custom allocator");
 }
 
+void lv_mem_deinit(void) {
+  // LVGL memory deinitialization - nothing special needed for our custom allocator
+  // The allocator functions use standard heap management, so no cleanup required
+  ESP_LOGI(TAG, "LVGL memory system deinitialized");
+}
+
 // Core functions that LVGL calls internally
 void *lv_malloc_core(size_t size) { return lvgl_malloc(size); }
 

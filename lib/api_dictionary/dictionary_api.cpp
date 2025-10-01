@@ -40,11 +40,14 @@ void DictionaryApi::shutdown() {
 
 bool DictionaryApi::isReady() const { return initialized_ && WiFi.status() == WL_CONNECTED; }
 
-DictionaryResult DictionaryApi::lookupWord(const String &word) {
+DictionaryResult DictionaryApi::lookupWord(const String &inWord) {
   if (!isReady()) {
     ESP_LOGW(TAG, "Service not ready (WiFi not connected)");
     return DictionaryResult();
   }
+
+  String word = inWord;
+  word.trim();
 
   if (!isWordValid(word)) {
     ESP_LOGW(TAG, "Invalid word provided");
@@ -175,11 +178,14 @@ DictionaryResult DictionaryApi::lookupWord(const String &word) {
   return DictionaryResult(outWord, outExplanation, outSampleSentence, success);
 }
 
-AudioUrl DictionaryApi::getAudioUrl(const String &word, const String &audioType) {
+AudioUrl DictionaryApi::getAudioUrl(const String &inWord, const String &audioType) {
   if (!isReady()) {
     ESP_LOGW(TAG, "Service not ready (WiFi not connected)");
     return AudioUrl();
   }
+
+  String word = inWord;
+  word.trim();
 
   if (!isWordValid(word)) {
     ESP_LOGW(TAG, "Invalid word for audio URL generation");
@@ -279,6 +285,10 @@ void DictionaryApi::prewarmTask(void *parameter) {
 
 bool DictionaryApi::isWordValid(const String &word) {
   if (word.length() == 0)
+    return false;
+  String trimmed = word;
+  trimmed.trim();
+  if (trimmed.length() == 0)
     return false;
   if (word.equalsIgnoreCase("null"))
     return false;

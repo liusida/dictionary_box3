@@ -19,7 +19,6 @@ void lvglEnableKeyEventHandler();
 void lvglSetKeyCallbacks(const SubmitCallback &onSubmit, const KeyInCallback &onKeyIn);
 void lvglRemoveKeyEventHandler();
 
-void lvglEnableFunctionKeyEventHandler();
 void lvglSetFunctionKeyCallbacks(const FunctionKeyCallback &onFunctionKeyIn);
 void lvglRemoveFunctionKeyEventHandler();
 

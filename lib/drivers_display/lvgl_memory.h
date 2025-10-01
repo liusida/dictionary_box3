@@ -47,6 +47,12 @@ void *lvgl_realloc(void *ptr, size_t size);
 void lv_mem_init(void);
 
 /**
+ * @brief Deinitialize LVGL memory system
+ * This function is called by LVGL when deinitializing
+ */
+ void lv_mem_deinit(void);
+ 
+/**
  * @brief Core memory allocation function called by LVGL
  */
 void *lv_malloc_core(size_t size);

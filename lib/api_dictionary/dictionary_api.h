@@ -52,6 +52,7 @@ public:
   DictionaryResult lookupWord(const String &word);                   // Look up a word in the dictionary
   AudioUrl getAudioUrl(const String &word, const String &audioType); // Get audio URL for a word
   void prewarm();                                                    // Prewarm the API client
+  bool isPrewarmRunning() const { return prewarmTaskHandle_ != nullptr; }
 
   // Helper methods (public for testing)
   String urlEncode(const String &str);  // URL encode a string
