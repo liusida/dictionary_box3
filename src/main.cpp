@@ -21,7 +21,6 @@ namespace dict {
 DisplayManager *g_display = nullptr;
 StatusOverlay *g_status = nullptr;
 BLEKeyboard *g_bleKeyboard = nullptr;
-KeyProcessor *g_keyProcessor = nullptr;
 NetworkControl *g_network = nullptr;
 AudioManager *g_audio = nullptr;
 } // namespace dict
@@ -86,21 +85,13 @@ void setup() {
 
   // Initialize BLE keyboard
   g_bleKeyboard = new BLEKeyboard();
-  g_keyProcessor = new KeyProcessor();
   TEST_ASSERT_TRUE_MESSAGE(g_bleKeyboard->initialize(), "BLE keyboard initialize failed");
-  TEST_ASSERT_TRUE_MESSAGE(g_keyProcessor->initialize(), "Key processor initialize failed");
-
-  // Set up BLE keyboard callback to send keys to event system
-  g_bleKeyboard->setKeyCallback([&](char ch, uint8_t keyCode, uint8_t modifiers) { g_keyProcessor->sendKeyToLVGL(ch, keyCode, modifiers); });
-
-  g_bleKeyboard->begin();
   ESP_LOGI("INTEGRATED_TEST", "BLE keyboard initialized, scanning for devices...");
   BOOT_MEMORY_ANALYSIS("After ble keyboard...");
 
   // Initialize network control
   g_network = new NetworkControl();
   TEST_ASSERT_TRUE_MESSAGE(g_network->initialize(), "Network control initialize failed");
-  g_network->begin();
   g_network->randomizeMACAddress();
   g_network->connectWithSavedCredentials();
   ESP_LOGI("INTEGRATED_TEST", "Network control initialized, attempting WiFi connection...");
@@ -149,11 +140,6 @@ void loop() {
       ESP_LOGI("INTEGRATED_TEST", "When not connected and scan ended more than 1 second ago, start scan again");
       g_bleKeyboard->startScan();
     }
-  }
-
-  // Process key processor
-  if (g_keyProcessor && g_keyProcessor->isReady()) {
-    g_keyProcessor->tick();
   }
 
   // Process all events in the event system

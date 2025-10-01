@@ -1,6 +1,5 @@
 #include "display_manager.h"
 #include "core_misc/log.h"
-#include "display_helper.h"
 #include "lvgl_helper.h"
 
 namespace dict {
@@ -85,13 +84,23 @@ void DisplayManager::shutdown() {
 
 void DisplayManager::tick() {
   if (isReady()) {
-    handleLVGLTasks();
+    lv_timer_handler();
   }
 }
 
 bool DisplayManager::isReady() const { return displayInitialized_ && touchInitialized_ && lvglInitialized_; }
 
-void DisplayManager::resetDisplay() { manualResetDisplay(); }
+void DisplayManager::resetDisplay() {
+  // Configure pins as outputs
+  pinMode(TFT_MANUAL_RST, OUTPUT);
+  pinMode(TFT_BL, OUTPUT);
+
+  // Reset sequence: High -> Low (ESP-Box-3 inverted logic)
+  digitalWrite(TFT_MANUAL_RST, HIGH);
+  delay(10); // Short delay
+  digitalWrite(TFT_MANUAL_RST, LOW);
+  delay(10); // Short delay
+}
 
 void DisplayManager::setBacklight(bool on) { digitalWrite(TFT_BL, on ? HIGH : LOW); }
 
@@ -142,8 +151,6 @@ bool DisplayManager::initTouch() {
     return false;
   }
 }
-
-void DisplayManager::handleTouch() {}
 
 void DisplayManager::initLVGL() {
   if (lvglInitialized_) {
@@ -210,8 +217,6 @@ void DisplayManager::initLVGL() {
 
   lvglInitialized_ = true;
 }
-
-void DisplayManager::handleLVGLTasks() { lv_timer_handler(); }
 
 void DisplayManager::dispFlushCallback(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
   TFT_eSPI *tft = (TFT_eSPI *)lv_display_get_user_data(disp);

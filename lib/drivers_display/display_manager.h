@@ -25,15 +25,9 @@ public:
 
   // Touch handling methods
   bool initTouch();   // Initialize GT911 touch controller
-  void handleTouch(); // Process touch input events
 
   // LVGL methods
   void initLVGL();        // Initialize LVGL display and input drivers
-  void handleLVGLTasks(); // Process LVGL tasks and rendering
-
-  // Utility/getter methods
-  TFT_eSPI &getTFT() { return tft_; }  // Get TFT display object reference
-  GT911 &getTouch() { return touch_; } // Get touch controller object reference
 
   // Static methods
   static void dispFlushCallback(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map); // LVGL display flush callback
