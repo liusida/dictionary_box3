@@ -7,10 +7,8 @@ namespace dict {
 
 static const char *TAG = "WiFiSettingsScreen";
 
-extern NetworkControl *g_network;
-
 void WiFiSettingsScreen::initialize() {
-  g_network->setIsOnSettingScreen(true);
+  NetworkControl::instance().setIsOnSettingScreen(true);
   scanning_ = false;
   scanTaskHandle_ = nullptr;
   setOptions_ = false;
@@ -34,12 +32,12 @@ void WiFiSettingsScreen::shutdown() {
     scanning_ = false;
     if (scanTaskHandle_ != nullptr) {
       vTaskDelete(scanTaskHandle_);
-      g_network->setScanning(false); // when force shutdown, set scanning flag to false
+      NetworkControl::instance().setScanning(false); // when force shutdown, set scanning flag to false
       scanTaskHandle_ = nullptr;
     }
   }
   ui_WIFI_Settings_screen_destroy();
-  g_network->setIsOnSettingScreen(false);
+  NetworkControl::instance().setIsOnSettingScreen(false);
 }
 
 void WiFiSettingsScreen::scanTask(void *parameter) {
@@ -48,21 +46,21 @@ void WiFiSettingsScreen::scanTask(void *parameter) {
   ESP_LOGI(TAG, "Scan task started");
   screen->txtStatus_ = "Preparing to scan...";
   screen->setTxtStatus_ = true;
-  while (g_network->isConnecting() || g_network->isScanning()) { // wait until connecting or scanning is finished
-    ESP_LOGI(TAG, "Waiting for connecting or scanning to finish. connecting: %d, scanning: %d", g_network->isConnecting(), g_network->isScanning());
+  while (NetworkControl::instance().isConnecting() || NetworkControl::instance().isScanning()) { // wait until connecting or scanning is finished
+    ESP_LOGI(TAG, "Waiting for connecting or scanning to finish. connecting: %d, scanning: %d", NetworkControl::instance().isConnecting(), NetworkControl::instance().isScanning());
     delay(500);
   }
   screen->txtStatus_ = "Scanning WiFi for 5 seconds...";
   screen->setTxtStatus_ = true;
   // Perform the actual scan
-  auto ssids = g_network->scanNetworks();
+  auto ssids = NetworkControl::instance().scanNetworks();
 
   ESP_LOGI(TAG, "Scan task completed, found %d networks", ssids.size());
 
   // Update UI from the task
-  String options = g_network->getCurrentSsid() + "\n";
+  String options = NetworkControl::instance().getCurrentSsid() + "\n";
   for (String ssid : ssids) {
-    if (ssid == g_network->getCurrentSsid()) {
+    if (ssid == NetworkControl::instance().getCurrentSsid()) {
       continue;
     }
     options += ssid + "\n";
@@ -91,14 +89,14 @@ void WiFiSettingsScreen::scan() {
     return;
   }
   scanning_ = true;
-  if (g_network->isConnected()) {
+  if (NetworkControl::instance().isConnected()) {
     lv_label_set_text(ui_TxtStatus, "Scanning WiFi for 5 seconds...");
-    String options = g_network->getCurrentSsid();
+    String options = NetworkControl::instance().getCurrentSsid();
     // Set dropdown background color to gray
     lv_obj_set_style_bg_color(ui_InputSSIDs, lv_color_hex(0xC3C3C3), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_dropdown_set_options(ui_InputSSIDs, options.c_str());
     lv_textarea_set_password_mode(ui_InputPassword, false);
-    lv_textarea_set_text(ui_InputPassword, g_network->getCurrentPassword().c_str());
+    lv_textarea_set_text(ui_InputPassword, NetworkControl::instance().getCurrentPassword().c_str());
     lv_textarea_set_password_mode(ui_InputPassword, true);
   } else {
     lv_dropdown_set_options(ui_InputSSIDs, "");
@@ -132,8 +130,8 @@ void WiFiSettingsScreen::onSubmit() {
   ESP_LOGI(TAG, "As String SSID: %s", ssid.c_str());
   String password = String(lv_textarea_get_text(ui_InputPassword));
   ESP_LOGI(TAG, "As String SSID or password: %s, %s", ssid.c_str(), password.c_str());
-  g_network->setTryingCredentials(ssid, password);
-  g_network->disconnect();
+  NetworkControl::instance().setTryingCredentials(ssid, password);
+  NetworkControl::instance().disconnect();
   parent_->onBackFromWifiSettings();
 }
 

@@ -9,10 +9,6 @@ namespace dict {
 
 static const char *TAG = "MainScreen";
 
-extern NetworkControl *g_network;
-extern AudioManager *g_audio;
-extern StatusOverlay *g_status;
-
 MainScreen::MainScreen() : initialized_(false), visible_(false), isWifiSettings_(false), isScreenActive_(false) {}
 
 MainScreen::~MainScreen() { shutdown(); }
@@ -131,11 +127,11 @@ void MainScreen::onSubmit() {
   lv_label_set_text(ui_TxtWord, currentWord_.c_str());
   lv_obj_add_flag(ui_InputWord, LV_OBJ_FLAG_HIDDEN);
   lv_obj_remove_flag(ui_TxtWord, LV_OBJ_FLAG_HIDDEN);
-  g_status->updateWiFiStatus(WiFiState::Working);
+  StatusOverlay::instance().updateWiFiStatus(WiFiState::Working);
   currentResult_ = dictionaryApi_.lookupWord(currentWord_);
-  g_status->updateWiFiStatus(g_network->isConnected() ? WiFiState::Ready : WiFiState::None);
+  StatusOverlay::instance().updateWiFiStatus(NetworkControl::instance().isConnected() ? WiFiState::Ready : WiFiState::None);
   if (currentResult_.success) {
-    g_audio->stop();
+    AudioManager::instance().stop();
     currentWord_ = currentResult_.word;
     lv_obj_remove_flag(ui_Line, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(ui_TxtWord, currentResult_.word.c_str());
@@ -204,8 +200,8 @@ void MainScreen::onPlayAudio(const String &audioType) {
   }
   AudioUrl audioUrl = dictionaryApi_.getAudioUrl(currentWord_, audioType);
   ESP_LOGI(TAG, "Playing audio: %s", audioUrl.url.c_str());
-  if (g_audio) {
-    g_audio->play(audioUrl.url.c_str());
+  if (AudioManager::instance().isReady()) {
+    AudioManager::instance().play(audioUrl.url.c_str());
   }
 }
 

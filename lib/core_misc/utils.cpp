@@ -4,8 +4,6 @@
 
 namespace dict {
 
-extern NetworkControl *g_network;
-
 void printMemoryStatus() {
   // Internal RAM (SRAM) information
   uint32_t freeHeap = ESP.getFreeHeap();
@@ -48,9 +46,9 @@ void printMemoryStatus() {
 
 void printAllStatus() {
   ESP_LOGI("Utils", "=== WiFi Status ===");
-  ESP_LOGI("Utils", "Connected: %d", g_network->isConnected());
-  ESP_LOGI("Utils", "Connecting: %d", g_network->isConnecting());
-  ESP_LOGI("Utils", "Scanning: %d", g_network->isScanning());
+  ESP_LOGI("Utils", "Connected: %d", NetworkControl::instance().isConnected());
+  ESP_LOGI("Utils", "Connecting: %d", NetworkControl::instance().isConnecting());
+  ESP_LOGI("Utils", "Scanning: %d", NetworkControl::instance().isScanning());
   ESP_LOGI("Utils", "===================");
 }
 

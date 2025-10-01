@@ -10,9 +10,8 @@ enum class AudioState { None, Ready, Working };
 
 class StatusOverlay {
 public:
-  // Constructor/Destructor
-  StatusOverlay();
-  ~StatusOverlay();
+  // Singleton access
+  static StatusOverlay &instance(); // Get singleton instance
 
   // Core lifecycle methods
   bool initialize();    // Initialize status overlay and create UI elements
@@ -43,6 +42,11 @@ public:
   bool isAttached() const;                              // Check if overlay is attached to a screen
 
 private:
+  StatusOverlay();
+  ~StatusOverlay() = default;
+  StatusOverlay(const StatusOverlay &) = delete;
+  StatusOverlay &operator=(const StatusOverlay &) = delete;
+
   // Private member variables
   lv_obj_t *null_screen_;
   lv_obj_t *container_;

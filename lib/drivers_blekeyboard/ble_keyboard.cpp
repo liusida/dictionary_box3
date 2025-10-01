@@ -61,6 +61,11 @@ public:
 
 static BLEKeyboard *keyboardInstance = nullptr;
 
+BLEKeyboard &BLEKeyboard::instance() {
+  static BLEKeyboard instance;
+  return instance;
+}
+
 BLEKeyboard::BLEKeyboard()
     : initialized_(false), scanning_(false), scanStartTime_(0), scanEndTime_(0), advDeviceAddress(""), doConnect(false), powerLevel(-15),
       scanTimeMs(500), keyCallback(nullptr) {
@@ -68,14 +73,6 @@ BLEKeyboard::BLEKeyboard()
   scanCallbacks = new ScanCallbacks(this);
   keyProcessor_ = new KeyProcessor();
   keyboardInstance = this;
-}
-
-BLEKeyboard::~BLEKeyboard() {
-  delete clientCallbacks;
-  delete scanCallbacks;
-  if (keyboardInstance == this) {
-    keyboardInstance = nullptr;
-  }
 }
 
 bool BLEKeyboard::initialize() {

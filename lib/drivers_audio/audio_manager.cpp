@@ -8,8 +8,10 @@ namespace dict {
 
 static const char *TAG = "AudioManager";
 
-extern NetworkControl *g_network;
-extern StatusOverlay *g_status;
+AudioManager &AudioManager::instance() {
+  static AudioManager instance;
+  return instance;
+}
 
 AudioManager::AudioManager()
     : board(AudioDriverES8311, NoPins), out(board), info(32000, 2, 16), player(nullptr), decoder(), urlSource(nullptr), urlStream(),
@@ -21,8 +23,6 @@ AudioManager::AudioManager()
     ESP_LOGI(TAG, "Audio preferences initialized successfully");
   }
 }
-
-AudioManager::~AudioManager() { shutdown(); }
 
 bool AudioManager::initialize() {
   ESP_LOGI(TAG, "=== AudioManager::initialize() called ===");
@@ -149,7 +149,7 @@ bool AudioManager::play(const char *url) {
   //  [ 43842][I][audio_manager.cpp:266] staticMetadataCallback(): [AudioManager] Metadata [Other]: Drum Solo
 
   // Start playback
-  g_status->updateAudioStatus(AudioState::Working, "mp3");
+  StatusOverlay::instance().updateAudioStatus(AudioState::Working, "mp3");
   if (player->begin()) {
     isPlaying = true;
 
@@ -176,7 +176,7 @@ bool AudioManager::stop() {
     isPlaying = false; // Stop the player before cleaning up
     player->stop();
     decoder.clearNotifyAudioChange();
-    g_status->updateAudioStatus(AudioState::Ready);
+    StatusOverlay::instance().updateAudioStatus(AudioState::Ready);
     player->end();
     delay(10);
     decoder.end();

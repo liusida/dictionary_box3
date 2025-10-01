@@ -15,9 +15,8 @@ using KeyCallback = std::function<void(char key, uint8_t keyCode, uint8_t modifi
 
 class BLEKeyboard {
 public:
-  // Constructor/Destructor
-  BLEKeyboard();
-  ~BLEKeyboard();
+  // Singleton access
+  static BLEKeyboard &instance(); // Get singleton instance
 
   // Core lifecycle methods
   bool initialize();    // Initialize BLE keyboard connection and scanning
@@ -35,6 +34,12 @@ public:
   void setKeyCallback(const KeyCallback &callback) { keyCallback = callback; } // Set callback for key events
 
 private:
+  // Private constructor/destructor for singleton
+  BLEKeyboard();
+  ~BLEKeyboard() = default;
+  BLEKeyboard(const BLEKeyboard &) = delete;
+  BLEKeyboard &operator=(const BLEKeyboard &) = delete;
+  
   // Private member variables
   class ClientCallbacks;
   class ScanCallbacks;

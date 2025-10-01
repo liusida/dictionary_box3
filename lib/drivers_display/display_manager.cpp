@@ -6,11 +6,14 @@ namespace dict {
 
 static const char *TAG = "DisplayManager";
 
+DisplayManager &DisplayManager::instance() {
+  static DisplayManager instance;  // This lives for the entire program lifetime
+  return instance;
+}
+
 DisplayManager::DisplayManager()
     : displayInitialized_(false), touchInitialized_(false), lvglInitialized_(false), display_(nullptr), inputDevice_(nullptr), buffer1_(nullptr),
       buffer2_(nullptr) {}
-
-DisplayManager::~DisplayManager() { shutdown(); }
 
 bool DisplayManager::initialize() {
   if (displayInitialized_) {

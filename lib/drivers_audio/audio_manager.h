@@ -17,9 +17,8 @@ namespace dict {
 
 class AudioManager {
 public:
-  // Constructor/Destructor
-  AudioManager();
-  ~AudioManager();
+  // Singleton access
+  static AudioManager &instance(); // Get singleton instance
 
   // Core lifecycle methods
   bool initialize();                            // Initialize audio system and ES8311 codec
@@ -38,6 +37,12 @@ public:
   void setVolume(float volume);               // Set audio volume (0.0 to 1.0)
 
 private:
+  // Private constructor/destructor for singleton
+  AudioManager();
+  ~AudioManager() = default;
+  AudioManager(const AudioManager &) = delete;
+  AudioManager &operator=(const AudioManager &) = delete;
+  
   // Audio board and output (ES8311)
   AudioBoard board;
   AudioBoardStream out;

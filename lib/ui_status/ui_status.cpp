@@ -5,12 +5,15 @@ namespace dict {
 
 static const char *TAG = "StatusOverlay";
 
+StatusOverlay &StatusOverlay::instance() {
+  static StatusOverlay instance;
+  return instance;
+}
+
 StatusOverlay::StatusOverlay()
     : container_(nullptr), wifiIndicator_(nullptr), bleIndicator_(nullptr), audioIndicator_(nullptr), attachedScreen_(nullptr), initialized_(false),
       visible_(false), indicatorSize_(10), animationDuration_(300), wifiState_(WiFiState::None), bleConnected_(false), audioState_(AudioState::None),
       wifiColor_(lv_color_hex(0x0ABF0F)), bleColor_(lv_color_hex(0x4098F2)), audioColor_(lv_color_hex(0xCE45DC)) {}
-
-StatusOverlay::~StatusOverlay() { shutdown(); }
 
 bool StatusOverlay::initialize() {
   if (initialized_) {

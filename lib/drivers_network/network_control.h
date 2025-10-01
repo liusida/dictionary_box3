@@ -9,9 +9,8 @@ namespace dict {
 
 class NetworkControl {
 public:
-  // Constructor/Destructor
-  NetworkControl();
-  ~NetworkControl();
+  // Singleton access
+  static NetworkControl &instance(); // Get singleton instance
 
   // Core lifecycle methods
   bool initialize();    // Initialize network control (calls begin())
@@ -64,6 +63,12 @@ public:
   bool isOnSettingScreen() const { return isOnSettingScreen_; }
 
 private:
+  // Private constructor/destructor for singleton
+  NetworkControl();
+  ~NetworkControl() = default;
+  NetworkControl(const NetworkControl &) = delete;
+  NetworkControl &operator=(const NetworkControl &) = delete;
+  
   Preferences preferences;
   bool initialized_;
   bool connecting_;

@@ -16,12 +16,15 @@ static const char *TAG = "WiFi";
 extern const uint8_t certs_x509_crt_bundle_start[] asm("_binary_certs_x509_crt_bundle_start");
 extern const uint8_t certs_x509_crt_bundle_end[] asm("_binary_certs_x509_crt_bundle_end");
 
+NetworkControl &NetworkControl::instance() {
+  static NetworkControl instance;
+  return instance;
+}
+
 NetworkControl::NetworkControl()
     : initialized_(false), connecting_(false), connectStartTime_(0), connectEndTime_(0), wifiConnected(false), lastConnectionCheck(0),
       lastDisconnectionTime(0), wasConnected(false), currentSsid_(""), currentPassword_(""), isOnSettingScreen_(false), scanning_(false),
       tryingSsid_(""), tryingPassword_("") {}
-
-NetworkControl::~NetworkControl() {}
 
 bool NetworkControl::initialize() { return begin(); }
 

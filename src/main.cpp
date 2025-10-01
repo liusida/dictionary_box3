@@ -16,15 +16,6 @@
 
 using namespace dict;
 
-namespace dict {
-// Global objects for the integrated test
-DisplayManager *g_display = nullptr;
-StatusOverlay *g_status = nullptr;
-BLEKeyboard *g_bleKeyboard = nullptr;
-NetworkControl *g_network = nullptr;
-AudioManager *g_audio = nullptr;
-} // namespace dict
-
 MainScreen *g_mainScreen = nullptr;
 
 // Test state tracking
@@ -44,9 +35,8 @@ void setup() {
   ESP_LOGI("INTEGRATED_TEST", "Starting integrated test setup...");
 
   // Initialize display manager
-  g_display = new DisplayManager();
-  TEST_ASSERT_TRUE_MESSAGE(g_display->initialize(), "Display manager initialize failed");
-  TEST_ASSERT_TRUE(g_display->isReady());
+  TEST_ASSERT_TRUE_MESSAGE(DisplayManager::instance().initialize(), "Display manager initialize failed");
+  TEST_ASSERT_TRUE(DisplayManager::instance().isReady());
   ESP_LOGI("INTEGRATED_TEST", "Display manager initialized successfully");
 
   BOOT_MEMORY_ANALYSIS("After display manager...");
@@ -67,39 +57,35 @@ void setup() {
   BOOT_MEMORY_ANALYSIS("After main screen...");
 
   // Initialize status overlay and attach to main screen
-  g_status = new StatusOverlay();
-  TEST_ASSERT_TRUE_MESSAGE(g_status->initialize(), "Status overlay initialize failed");
-  TEST_ASSERT_TRUE(g_status->isReady());
+  TEST_ASSERT_TRUE_MESSAGE(StatusOverlay::instance().initialize(), "Status overlay initialize failed");
+  TEST_ASSERT_TRUE(StatusOverlay::instance().isReady());
 
-  g_status->attachToScreen(ui_Main);
-  g_status->show();
-  g_status->setPosition(LV_ALIGN_TOP_RIGHT, -10, 10);
+  StatusOverlay::instance().attachToScreen(ui_Main);
+  StatusOverlay::instance().show();
+  StatusOverlay::instance().setPosition(LV_ALIGN_TOP_RIGHT, -10, 10);
   ESP_LOGI("INTEGRATED_TEST", "Status overlay initialized and attached");
   BOOT_MEMORY_ANALYSIS("After status overlay...");
 
   // Initially hide all status icons until services are ready
-  g_status->updateWiFiStatus(WiFiState::None);
-  g_status->updateBLEStatus(false);
-  g_status->updateAudioStatus(AudioState::None);
+  StatusOverlay::instance().updateWiFiStatus(WiFiState::None);
+  StatusOverlay::instance().updateBLEStatus(false);
+  StatusOverlay::instance().updateAudioStatus(AudioState::None);
   ESP_LOGI("INTEGRATED_TEST", "Status icons hidden initially");
 
   // Initialize BLE keyboard
-  g_bleKeyboard = new BLEKeyboard();
-  TEST_ASSERT_TRUE_MESSAGE(g_bleKeyboard->initialize(), "BLE keyboard initialize failed");
+  TEST_ASSERT_TRUE_MESSAGE(BLEKeyboard::instance().initialize(), "BLE keyboard initialize failed");
   ESP_LOGI("INTEGRATED_TEST", "BLE keyboard initialized, scanning for devices...");
   BOOT_MEMORY_ANALYSIS("After ble keyboard...");
 
   // Initialize network control
-  g_network = new NetworkControl();
-  TEST_ASSERT_TRUE_MESSAGE(g_network->initialize(), "Network control initialize failed");
-  g_network->randomizeMACAddress();
-  g_network->connectWithSavedCredentials();
+  TEST_ASSERT_TRUE_MESSAGE(NetworkControl::instance().initialize(), "Network control initialize failed");
+  NetworkControl::instance().randomizeMACAddress();
+  NetworkControl::instance().connectWithSavedCredentials();
   ESP_LOGI("INTEGRATED_TEST", "Network control initialized, attempting WiFi connection...");
   BOOT_MEMORY_ANALYSIS("After network control...");
 
   // Initialize audio manager
-  g_audio = new AudioManager();
-  TEST_ASSERT_TRUE_MESSAGE(g_audio->initialize(), "Audio manager initialize failed");
+  TEST_ASSERT_TRUE_MESSAGE(AudioManager::instance().initialize(), "Audio manager initialize failed");
   ESP_LOGI("INTEGRATED_TEST", "Audio manager initialized");
   BOOT_MEMORY_ANALYSIS("After audio manager...");
 
@@ -108,37 +94,37 @@ void setup() {
 
 void loop() {
   // Process display updates
-  if (g_display && g_display->isReady()) {
-    g_display->tick();
+  if (DisplayManager::instance().isReady()) {
+    DisplayManager::instance().tick();
   }
 
   // Process status overlay updates
-  if (g_status && g_status->isReady()) {
-    g_status->tick();
+  if (StatusOverlay::instance().isReady()) {
+    StatusOverlay::instance().tick();
   }
 
   // Process BLE keyboard
-  if (g_bleKeyboard && g_bleKeyboard->isReady()) {
-    g_bleKeyboard->tick();
+  if (BLEKeyboard::instance().isReady()) {
+    BLEKeyboard::instance().tick();
 
     // Check BLE connection status and update UI
-    bool bleConnected = g_bleKeyboard->isConnected();
+    bool bleConnected = BLEKeyboard::instance().isConnected();
     if (bleConnected != g_bleConnected) {
       g_bleConnected = bleConnected;
-      if (g_status) {
+      if (StatusOverlay::instance().isReady()) {
         if (bleConnected) {
-          g_status->updateBLEStatus(true, "BLE Keyboard");
+          StatusOverlay::instance().updateBLEStatus(true, "BLE Keyboard");
           ESP_LOGI("INTEGRATED_TEST", "BLE keyboard connected!");
           BOOT_MEMORY_ANALYSIS("After ble keyboard connected...");
         } else {
-          g_status->updateBLEStatus(false);
+          StatusOverlay::instance().updateBLEStatus(false);
           ESP_LOGI("INTEGRATED_TEST", "BLE keyboard disconnected");
         }
       }
     }
-    if (!bleConnected && !g_bleKeyboard->isScanning() && millis() - g_bleKeyboard->getScanEndTime() > 1000) {
+    if (!bleConnected && !BLEKeyboard::instance().isScanning() && millis() - BLEKeyboard::instance().getScanEndTime() > 1000) {
       ESP_LOGI("INTEGRATED_TEST", "When not connected and scan ended more than 1 second ago, start scan again");
-      g_bleKeyboard->startScan();
+      BLEKeyboard::instance().startScan();
     }
   }
 
@@ -146,57 +132,57 @@ void loop() {
   EventSystem::instance().processAllEvents();
 
   // Process network control
-  if (g_network && g_network->isReady()) {
-    g_network->tick();
+  if (NetworkControl::instance().isReady()) {
+    NetworkControl::instance().tick();
 
     // Check WiFi connection status and update UI
-    bool wifiConnected = g_network->isConnected();
+    bool wifiConnected = NetworkControl::instance().isConnected();
     if (wifiConnected != g_wifiConnected) {
       g_wifiConnected = wifiConnected;
-      if (g_status) {
+      if (StatusOverlay::instance().isReady()) {
         if (wifiConnected) {
           String ssid = WiFi.SSID();
-          g_status->updateWiFiStatus(WiFiState::Ready, ssid);
+          StatusOverlay::instance().updateWiFiStatus(WiFiState::Ready, ssid);
           ESP_LOGI("INTEGRATED_TEST", "WiFi connected to: %s", ssid.c_str());
           g_mainScreen->onConnectionReady();
           BOOT_MEMORY_ANALYSIS("After wifi connected...");
         } else {
-          g_status->updateWiFiStatus(WiFiState::None);
+          StatusOverlay::instance().updateWiFiStatus(WiFiState::None);
           ESP_LOGI("INTEGRATED_TEST", "WiFi disconnected");
         }
       }
     }
-    if (!wifiConnected && !g_network->isConnecting() && millis() - g_network->getConnectEndTime() > 10000) {
-      if (!g_network->isOnSettingScreen()) {
+    if (!wifiConnected && !NetworkControl::instance().isConnecting() && millis() - NetworkControl::instance().getConnectEndTime() > 10000) {
+      if (!NetworkControl::instance().isOnSettingScreen()) {
         ESP_LOGI("INTEGRATED_TEST", "When not connected and connect ended more than 10 seconds ago, start connect again");
-        g_network->randomizeMACAddress();
-        g_network->connectWithTryingCredentials();
+        NetworkControl::instance().randomizeMACAddress();
+        NetworkControl::instance().connectWithTryingCredentials();
       }
     } else {
       static uint32_t lastCheck = 0;
       while (millis() - lastCheck > 1000) {
         lastCheck = millis();
-        // ESP_LOGD("INTEGRATED_TEST", "Check why not hit reconnect: %d, %d, %d", wifiConnected, g_network->isConnecting(), millis() -
-        // g_network->getConnectEndTime());
+        // ESP_LOGD("INTEGRATED_TEST", "Check why not hit reconnect: %d, %d, %d", wifiConnected, NetworkControl::instance().isConnecting(), millis() -
+        // NetworkControl::instance().getConnectEndTime());
       }
     }
   }
 
   // Process audio manager
-  if (g_audio && g_audio->isReady()) {
-    g_audio->tick();
+  if (AudioManager::instance().isReady()) {
+    AudioManager::instance().tick();
 
     // Check audio readiness and update UI
-    bool audioReady = g_audio->isReady();
+    bool audioReady = AudioManager::instance().isReady();
     if (audioReady != g_audioReady) {
       g_audioReady = audioReady;
-      if (g_status) {
+      if (StatusOverlay::instance().isReady()) {
         if (audioReady) {
-          g_status->updateAudioStatus(AudioState::Ready);
+          StatusOverlay::instance().updateAudioStatus(AudioState::Ready);
           ESP_LOGI("INTEGRATED_TEST", "Audio system ready");
           BOOT_MEMORY_ANALYSIS("After audio system ready...");
         } else {
-          g_status->updateAudioStatus(AudioState::None);
+          StatusOverlay::instance().updateAudioStatus(AudioState::None);
           ESP_LOGI("INTEGRATED_TEST", "Audio system not ready");
         }
       }

@@ -9,8 +9,6 @@ namespace dict {
 
 static const char *TAG = "LVGLHelper";
 
-extern AudioManager *g_audio;
-
 lv_group_t *getDefaultGroup() {
   lv_group_t *default_group = lv_group_get_default();
   if (default_group == nullptr) {
@@ -81,14 +79,14 @@ static void handleFunctionKeyEvent(const FunctionKeyEvent &ev) {
     break;
   case FunctionKeyEvent::VolumeDown:
     ESP_LOGI(TAG, "F10 pressed - volume down");
-    if (g_audio) {
-      g_audio->setVolume(g_audio->getVolume() - 0.05);
+    if (AudioManager::instance().isReady()) {
+      AudioManager::instance().setVolume(AudioManager::instance().getVolume() - 0.05);
     }
     break;
   case FunctionKeyEvent::VolumeUp:
     ESP_LOGI(TAG, "F11 pressed - volume up");
-    if (g_audio) {
-      g_audio->setVolume(g_audio->getVolume() + 0.05);
+    if (AudioManager::instance().isReady()) {
+      AudioManager::instance().setVolume(AudioManager::instance().getVolume() + 0.05);
     }
     break;
   case FunctionKeyEvent::WifiSettings:

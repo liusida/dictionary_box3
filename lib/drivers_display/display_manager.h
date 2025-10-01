@@ -9,9 +9,8 @@ namespace dict {
 
 class DisplayManager {
 public:
-  // Constructor/Destructor
-  DisplayManager();
-  ~DisplayManager();
+  // Singleton access
+  static DisplayManager &instance(); // Get singleton instance
 
   // Core lifecycle methods
   bool initialize();    // Initialize display, touch controller, and LVGL
@@ -35,6 +34,10 @@ public:
   static uint32_t tickCallback();                                                            // LVGL tick callback for timing
 
 private:
+  DisplayManager();
+  ~DisplayManager() = default;
+  DisplayManager(const DisplayManager &) = delete;
+  DisplayManager &operator=(const DisplayManager &) = delete;
   TFT_eSPI tft_;
   GT911 touch_;
   bool displayInitialized_;
