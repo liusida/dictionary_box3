@@ -9,9 +9,12 @@ namespace dict {
 
 static const char *TAG = "MainScreen";
 
-MainScreen::MainScreen() : initialized_(false), visible_(false), isWifiSettings_(false), isScreenActive_(false) {}
+MainScreen &MainScreen::instance() {
+  static MainScreen instance;
+  return instance;
+}
 
-MainScreen::~MainScreen() { shutdown(); }
+MainScreen::MainScreen() : initialized_(false), visible_(false), isWifiSettings_(false), isScreenActive_(false) {}
 
 bool MainScreen::initialize() {
   if (initialized_) {
@@ -29,6 +32,10 @@ void MainScreen::shutdown() {
     return;
   }
 
+  if (WiFiSettingsScreen::instance().isReady()) {
+    WiFiSettingsScreen::instance().shutdown();
+  }
+
   dictionaryApi_.shutdown();
 
   initialized_ = false;
@@ -40,7 +47,7 @@ void MainScreen::tick() {
     return;
   }
   if (isWifiSettings_) {
-    wifiSettingsScreen_.tick();
+    WiFiSettingsScreen::instance().tick();
   }
 }
 
@@ -107,7 +114,7 @@ bool MainScreen::isVisible() const { return visible_; }
 
 void MainScreen::onSubmit() {
   if (!isScreenActive_ && isWifiSettings_) {
-    wifiSettingsScreen_.onSubmit();
+    WiFiSettingsScreen::instance().onSubmit();
     return;
   }
   currentWord_ = lv_textarea_get_text(ui_InputWord);
@@ -214,9 +221,8 @@ void MainScreen::onConnectionReady() {
 void MainScreen::onWifiSettings() {
   ESP_LOGI(TAG, "Wifi settings");
   if (!isWifiSettings_) {
-    wifiSettingsScreen_.initialize();
-    wifiSettingsScreen_.setParent(this);
-    wifiSettingsScreen_.scan();
+    WiFiSettingsScreen::instance().initialize(this);
+    WiFiSettingsScreen::instance().scan();
     isWifiSettings_ = true;
     isScreenActive_ = false;
   } else {
@@ -227,7 +233,7 @@ void MainScreen::onWifiSettings() {
 void MainScreen::onBackFromWifiSettings() {
   ESP_LOGI(TAG, "Back from wifi settings");
   if (isWifiSettings_) {
-    wifiSettingsScreen_.shutdown();
+    WiFiSettingsScreen::instance().shutdown();
     lv_disp_load_scr(ui_Main); // Switch back to main screen
     lv_group_focus_obj(ui_InputWord);
     isWifiSettings_ = false;

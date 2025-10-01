@@ -8,16 +8,26 @@ class MainScreen;
 
 class WiFiSettingsScreen {
 public:
-  void initialize();
+  // Singleton access
+  static WiFiSettingsScreen &instance(); // Get singleton instance
+
+  // Core lifecycle methods
+  void initialize(MainScreen *parent);
   void shutdown();
   void tick();
+  bool isReady() const { return initialized_; }
 
   void scan();
   void onSelect(const String &ssid);
   void onSubmit();
-  void setParent(MainScreen *parent);
 
 private:
+  WiFiSettingsScreen();
+  ~WiFiSettingsScreen() = default;
+  WiFiSettingsScreen(const WiFiSettingsScreen &) = delete;
+  WiFiSettingsScreen &operator=(const WiFiSettingsScreen &) = delete;
+  
+  bool initialized_;
   MainScreen *parent_;
   static void scanTask(void *parameter);
   bool scanning_;

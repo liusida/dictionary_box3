@@ -16,8 +16,6 @@
 
 using namespace dict;
 
-MainScreen *g_mainScreen = nullptr;
-
 // Test state tracking
 bool g_bleConnected = false;
 bool g_wifiConnected = false;
@@ -49,10 +47,9 @@ void setup() {
   ui_Main_screen_init();
   BOOT_MEMORY_ANALYSIS("After ui_init...");
 
-  g_mainScreen = new MainScreen();
-  TEST_ASSERT_TRUE_MESSAGE(g_mainScreen->initialize(), "Main screen initialize failed");
-  TEST_ASSERT_TRUE(g_mainScreen->isReady());
-  g_mainScreen->show();
+  TEST_ASSERT_TRUE_MESSAGE(MainScreen::instance().initialize(), "Main screen initialize failed");
+  TEST_ASSERT_TRUE(MainScreen::instance().isReady());
+  MainScreen::instance().show();
   ESP_LOGI("INTEGRATED_TEST", "Main UI screen loaded");
   BOOT_MEMORY_ANALYSIS("After main screen...");
 
@@ -144,7 +141,7 @@ void loop() {
           String ssid = WiFi.SSID();
           StatusOverlay::instance().updateWiFiStatus(WiFiState::Ready, ssid);
           ESP_LOGI("INTEGRATED_TEST", "WiFi connected to: %s", ssid.c_str());
-          g_mainScreen->onConnectionReady();
+          MainScreen::instance().onConnectionReady();
           BOOT_MEMORY_ANALYSIS("After wifi connected...");
         } else {
           StatusOverlay::instance().updateWiFiStatus(WiFiState::None);
@@ -190,8 +187,8 @@ void loop() {
   }
 
   // Process main screen
-  if (g_mainScreen && g_mainScreen->isReady()) {
-    g_mainScreen->tick();
+  if (MainScreen::instance().isReady()) {
+    MainScreen::instance().tick();
   }
 
   delay(10); // Small delay to prevent overwhelming the system

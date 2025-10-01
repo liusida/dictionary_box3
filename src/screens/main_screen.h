@@ -7,8 +7,8 @@ namespace dict {
 
 class MainScreen {
 public:
-  MainScreen();
-  ~MainScreen();
+  // Singleton access
+  static MainScreen &instance(); // Get singleton instance
 
   // Core lifecycle methods
   bool initialize();
@@ -33,6 +33,12 @@ public:
   void onEscape();
 
 private:
+  // Private constructor/destructor for singleton
+  MainScreen();
+  ~MainScreen() = default;
+  MainScreen(const MainScreen &) = delete;
+  MainScreen &operator=(const MainScreen &) = delete;
+  
   bool initialized_;
   bool visible_;
   bool isScreenActive_;
@@ -40,7 +46,6 @@ private:
   DictionaryApi dictionaryApi_;
   DictionaryResult currentResult_;
   bool isWifiSettings_;
-  WiFiSettingsScreen wifiSettingsScreen_;
 };
 
 } // namespace dict

@@ -7,7 +7,15 @@ namespace dict {
 
 static const char *TAG = "WiFiSettingsScreen";
 
-void WiFiSettingsScreen::initialize() {
+WiFiSettingsScreen &WiFiSettingsScreen::instance() {
+  static WiFiSettingsScreen instance;
+  return instance;
+}
+
+WiFiSettingsScreen::WiFiSettingsScreen() : initialized_(false), parent_(nullptr) {}
+
+void WiFiSettingsScreen::initialize(MainScreen *parent) {
+  parent_ = parent;
   NetworkControl::instance().setIsOnSettingScreen(true);
   scanning_ = false;
   scanTaskHandle_ = nullptr;
@@ -24,6 +32,7 @@ void WiFiSettingsScreen::initialize() {
     lv_obj_add_event_cb(
         ui_BtnConnect, [](lv_event_t *e) { static_cast<WiFiSettingsScreen *>(lv_event_get_user_data(e))->onSubmit(); }, LV_EVENT_CLICKED, this);
   }
+  initialized_ = true;
 }
 
 void WiFiSettingsScreen::shutdown() {
@@ -38,6 +47,7 @@ void WiFiSettingsScreen::shutdown() {
   }
   ui_WIFI_Settings_screen_destroy();
   NetworkControl::instance().setIsOnSettingScreen(false);
+  initialized_ = false;
 }
 
 void WiFiSettingsScreen::scanTask(void *parameter) {
@@ -134,8 +144,6 @@ void WiFiSettingsScreen::onSubmit() {
   NetworkControl::instance().disconnect();
   parent_->onBackFromWifiSettings();
 }
-
-void WiFiSettingsScreen::setParent(MainScreen *parent) { parent_ = parent; }
 
 void WiFiSettingsScreen::tick() {
   if (setTxtStatus_) {
