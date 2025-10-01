@@ -136,7 +136,6 @@ void MainScreen::onSubmit() {
   StatusOverlay::instance().updateWiFiStatus(WiFiState::Working);
   currentResult_ = dictionaryApi_.lookupWord(currentWord_);
   StatusOverlay::instance().updateWiFiStatus(NetworkControl::instance().isConnected() ? WiFiState::Ready : WiFiState::None);
-  onJumpToTop();
   if (currentResult_.success) {
     AudioManager::instance().stop();
     currentWord_ = currentResult_.word;
@@ -302,12 +301,6 @@ void MainScreen::onEscape() {
       }
     }
   }
-}
-
-void MainScreen::onJumpToTop() {
-  if (ui_Result == nullptr)
-    return;
-  lv_obj_scroll_to_y(ui_Result, 0, LV_ANIM_OFF);
 }
 
 } // namespace dict

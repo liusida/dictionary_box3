@@ -32,8 +32,6 @@ public:
   void onDownArrow();
   void onUpArrow();
   void onEscape();
-  void onJumpToTop();
-
 
   lv_obj_t *uiObject() const { return ui_Main; }
 
